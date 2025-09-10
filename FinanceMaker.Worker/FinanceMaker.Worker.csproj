@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>FinanceMaker.Worker</RootNamespace>
+    <AssemblyName>FinanceMaker.Worker</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="NCrontab" Version="3.3.3" />
+  </ItemGroup>
+    <ItemGroup>
+    <ProjectReference Include="../FinanceMaker.Trades.Publisher/FinanceMaker.Publisher.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Algorithms\FinanceMaker.Algorithms.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Common\FinanceMaker.Common.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Ideas\FinanceMaker.Ideas.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Pullers\FinanceMaker.Pullers.csproj" />
+  </ItemGroup>
+
+</Project>

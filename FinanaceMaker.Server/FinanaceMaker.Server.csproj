@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'https' " />
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'http' " />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.18" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../FinanceMaker.Trades.Publisher/FinanceMaker.Publisher.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Algorithms\FinanceMaker.Algorithms.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Common\FinanceMaker.Common.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Ideas\FinanceMaker.Ideas.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Pullers\FinanceMaker.Pullers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\Ideas\" />
+  </ItemGroup>
+</Project>

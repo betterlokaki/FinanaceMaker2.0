@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="News\" />
+    <None Remove="Chart\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FinanceMaker.Common\FinanceMaker.Common.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Pullers\FinanceMaker.Pullers.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Framework" Version="17.11.4" />
+  </ItemGroup>
+</Project>

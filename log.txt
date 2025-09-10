@@ -1,0 +1,19 @@
+2025-04-27T15:25:24.0159360Z TRACE:: Engine.Main(): LEAN ALGORITHMIC TRADING ENGINE v2.5.0.0 Mode: DEBUG (64bit) Host: Shahars-MacBook-Pro
+2025-04-27T15:25:24.0713760Z TRACE:: Engine.Main(): Started 18:25
+2025-04-27T15:25:24.0797470Z TRACE:: Config.Get(): Configuration key not found. Key: lean-manager-type - Using default value: LocalLeanManager
+2025-04-27T15:25:24.0876700Z TRACE:: JobQueue.NextJob(): Selected FinanceMaker.BackTester.dll
+2025-04-27T15:25:24.0877010Z TRACE:: Config.Get(): Configuration key not found. Key: parameters - Using default value: 
+2025-04-27T15:25:24.0879700Z TRACE:: Config.GetValue(): scheduled-event-leaky-bucket-capacity - Using default value: 120
+2025-04-27T15:25:24.0879790Z TRACE:: Config.GetValue(): scheduled-event-leaky-bucket-time-interval-minutes - Using default value: 1440
+2025-04-27T15:25:24.0879870Z TRACE:: Config.GetValue(): scheduled-event-leaky-bucket-refill-amount - Using default value: 18
+2025-04-27T15:25:24.0881320Z TRACE:: Config.GetValue(): symbol-minute-limit - Using default value: 10000
+2025-04-27T15:25:24.0881570Z TRACE:: Config.GetValue(): symbol-second-limit - Using default value: 10000
+2025-04-27T15:25:24.0881670Z TRACE:: Config.GetValue(): symbol-tick-limit - Using default value: 10000
+2025-04-27T15:25:24.0881730Z TRACE:: Config.GetValue(): maximum-data-points-per-chart-series - Using default value: 1000000
+2025-04-27T15:25:24.0881800Z TRACE:: Config.GetValue(): maximum-chart-series - Using default value: 30
+2025-04-27T15:25:24.0884450Z TRACE:: Config.GetValue(): storage-limit - Using default value: 10737418240
+2025-04-27T15:25:24.0884530Z TRACE:: Config.GetValue(): storage-file-count - Using default value: 10000
+2025-04-27T15:25:24.0884590Z TRACE:: Config.GetValue(): storage-permissions - Using default value: 3
+2025-04-27T15:25:24.0884650Z TRACE:: Config.Get(): Configuration key not found. Key: algorithm-id - Using default value: RangeAlgoritm
+2025-04-27T15:25:24.0884820Z TRACE:: Config.Get(): Configuration key not found. Key: optimization-id - Using default value: 
+2025-04-27T15:25:24.0884890Z TRACE:: Config.Get(): Configuration key not found. Key: backtest-name - Using default value: local

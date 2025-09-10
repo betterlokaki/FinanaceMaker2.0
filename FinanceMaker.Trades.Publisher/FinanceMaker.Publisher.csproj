@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+   <ItemGroup>
+    <ProjectReference Include="..\FinanceMaker.Common\FinanceMaker.Common.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Ideas\FinanceMaker.Ideas.csproj" />
+    <ProjectReference Include="..\FinanceMaker.Brokers\FinanceMaker.Brokers.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="6.0.0" />
+    <PackageReference Include="Alpaca.Markets" Version="7.1.0" />
+    <PackageReference Include="Alpaca.Markets.Extensions" Version="7.1.0" />
+    <PackageReference Include="TWS" Version="1.0.0" />
+  </ItemGroup>
+</Project>

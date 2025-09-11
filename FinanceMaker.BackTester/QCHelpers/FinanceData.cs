@@ -35,7 +35,7 @@ public class FinanceData : BaseData
     {
         // Define the path to your custom data file
         CounterDataSource++;
-        var end = date.AddDays(1);
+        var end = date.AddDays(1).AddHours(23).AddMinutes(59);
         end = end > DateTime.Now ? DateTime.Now : end;
         var filePath = Helper.SaveCandlestickDataToCsv(config.Symbol.Value,
                                 ConvertResolutionToPeriod(config.Resolution),

@@ -17,9 +17,7 @@ public class RangePlusAlgorithm : QCAlgorithm
     private Dictionary<string, float[]> m_TickerToKeyLevels = new();
     private Dictionary<string, float> m_TickerToMoney = new();
     private Resolution m_TestingPeriod;
-
-    public List<string> m_ProblematicTickers { get; private set; }
-
+    private List<string> m_ProblematicTickers = [];
     // Track open position and average price per ticker for P&L calculation
     private Dictionary<string, int> m_TickerToPosition = new();
     private Dictionary<string, decimal> m_TickerToAvgPrice = new();
@@ -31,11 +29,11 @@ public class RangePlusAlgorithm : QCAlgorithm
     /// </summary>
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-29);
+        var startDate = DateTime.Now.Date.AddDays(-2);
         var startDateForAlgo = new DateTime(2020, 1, 1);
-        var endDate = DateTime.Now.AddDays(0);
+        var endDate = DateTime.Now.AddDays(1);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
-        SetCash(9_900); // Starting cash for the algorithm
+        SetCash(25_900); // Starting cash for the algorithm
         SetStartDate(startDate);
         SetEndDate(endDate);
         SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(2.5m))); // $1 per trade
@@ -49,7 +47,7 @@ public class RangePlusAlgorithm : QCAlgorithm
         m_ProblematicTickers = ["HUT", "ENPH"];
         // Define candidate tickers (Big 7, Intel, and other large-cap tech)
         tickers = [
-            "PLTR", "HUT", "GOOGL", "AAPL"
+             "PLTR", "HUT",  "NVDA",
         ];
         tickers = tickers.Distinct().ToList();
         var rangeAlgorithm = serviceProvider.GetService<RangeAlgorithmsRunner>();
@@ -126,9 +124,17 @@ public class RangePlusAlgorithm : QCAlgorithm
                         bool isBearishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close > c.Open) &&
                                                     spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close < c.Open);
 
-                        if (isBearishReversal) return;
+                        if (!isBearishReversal)
+                        {
+                            Buy(data.Symbol);
 
-                        Buy(data.Symbol);
+                        }
+
+                        else if (data.CandleStick.Pivot == Common.Models.Finance.Enums.Pivot.Low)
+                        {
+                            Buy(data.Symbol);
+                            return;
+                        }
 
                     }
                 }
@@ -144,7 +150,7 @@ public class RangePlusAlgorithm : QCAlgorithm
         {
 
 
-            if (currentPrice >= avgPrice * 1.02m || currentPrice <= avgPrice * 0.985m)
+            if (currentPrice >= avgPrice * 1.02m || currentPrice <= avgPrice * 0.983m)
             {
                 Sell(data.Symbol);
             }
@@ -166,7 +172,7 @@ public class RangePlusAlgorithm : QCAlgorithm
     {
         Debug("Trying to buy " + symbol.Value);
         float p = 1f / m_TickerToKeyLevels.Count;
-        SetHoldings(symbol, 0.5);
+        SetHoldings(symbol, p);
     }
 
     /// <summary>

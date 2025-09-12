@@ -244,7 +244,7 @@ public sealed class MultiAlgorithm : QCAlgorithm
 
                 if (holdings.Quantity > 0)
                 {
-                    if (currentPrice >= avgPrice * 1.02m || currentPrice <= avgPrice * 0.983m)
+                    if (currentPrice >= avgPrice * 1.02m || currentPrice <= avgPrice * 0.98m)
                     {
                         Sell(data.Symbol);
                     }

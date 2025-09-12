@@ -232,7 +232,7 @@ public sealed class MultiAlgorithm : QCAlgorithm
         {
             AddExitStrategy(symbol.Value, data =>
             {
-                var holdings = Securities[data.Symbol.Value].Holdings;
+                var holdings = Securities[data.Symbol].Holdings;
                 if (holdings.Quantity == 0)
                 {
 
@@ -420,9 +420,9 @@ public sealed class MultiAlgorithm : QCAlgorithm
     private void ProcessPotentialEntry(FinanceData data)
     {
         var symbol = data.Symbol;
-        var holdings = Securities[symbol.Value].Holdings;
+        var holdings = Securities[symbol].Holdings;
 
-        if (holdings.Quantity != 0) return;
+        if (holdings.Quantity > 0) return;
 
         var previousHistory = History<FinanceData>(symbol, 90, m_TestingPeriod);
         if (previousHistory?.Count() < 90) return;

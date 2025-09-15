@@ -54,9 +54,15 @@ public class QCTrader : ITrader
             .OrderByDescending(ticker => ticker.price)
             .ToArray();
 
+
+
         tickersToTrade = tickersToTrade.Where(_ => !currentPosion.OpenedPositions.Contains(_.ticker) && !currentPosion.Orders.Contains(_.ticker))
                                        .Take(NUMBER_OF_OPEN_TRADES)
                                        .ToArray();
+        if (!tickersToTrade.Any())
+        {
+            tickersToTrade = [("NIO", 6.00f)];
+        }
         var buyingPower = currentPosion.BuyingPower;
         var moneyForEachTrade = STARTED_MONEY * 0.5f;
         if (buyingPower < moneyForEachTrade && buyingPower / moneyForEachTrade < 0.6) return;
@@ -74,8 +80,8 @@ public class QCTrader : ITrader
 
             if (quntity == 0) continue;
 
-            var stopLoss = entryPrice * 0.985f;
-            var takeProfit = entryPrice * 1.02f;
+            var stopLoss = MathF.Round(entryPrice * 0.985f, 2);
+            var takeProfit = MathF.Round(entryPrice * 1.02f, 2);
             var description = $"Entry price: {entryPrice}, Stop loss: {stopLoss}, Take profit: {takeProfit}";
             var order = new EntryExitOutputIdea(description, ticker, entryPrice, takeProfit, stopLoss, quntity);
 

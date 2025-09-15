@@ -29,11 +29,11 @@ public class RangePlusAlgorithm : QCAlgorithm
     /// </summary>
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-2);
+        var startDate = DateTime.Now.Date.AddDays(-29);
         var startDateForAlgo = new DateTime(2020, 1, 1);
-        var endDate = DateTime.Now.AddDays(1);
+        var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
-        SetCash(25_900); // Starting cash for the algorithm
+        SetCash(10_700); // Starting cash for the algorithm
         SetStartDate(startDate);
         SetEndDate(endDate);
         SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(2.5m))); // $1 per trade
@@ -47,7 +47,7 @@ public class RangePlusAlgorithm : QCAlgorithm
         m_ProblematicTickers = ["HUT", "ENPH"];
         // Define candidate tickers (Big 7, Intel, and other large-cap tech)
         tickers = [
-             "PLTR", "HUT",  "NVDA",
+           "HUT", "AAPL", "BABA"
         ];
         tickers = tickers.Distinct().ToList();
         var rangeAlgorithm = serviceProvider.GetService<RangeAlgorithmsRunner>();
@@ -73,11 +73,11 @@ public class RangePlusAlgorithm : QCAlgorithm
         var actualTickers = m_TickerToKeyLevels.OrderByDescending(_ => _.Value?.Length ?? 0)
                                                .Select(_ => _.Key)
                                                .ToArray();
-        m_SpyData = rangeAlgorithm!.Run<FinanceCandleStick>(new RangeAlgorithmInput(new PricesPullerParameters(
-                    "ES=F",
-                    startDate,
-                    endDate,
-                    Common.Models.Pullers.Enums.Period.OneMinute), Algorithm.KeyLevels), CancellationToken.None).Result;
+        // m_SpyData = rangeAlgorithm!.Run<FinanceCandleStick>(new RangeAlgorithmInput(new PricesPullerParameters(
+        //             "ES=F",
+        //             startDate,
+        //             endDate,
+        //             Common.Models.Pullers.Enums.Period.OneMinute), Algorithm.KeyLevels), CancellationToken.None).Result;
         foreach (var ticker in actualTickers)
         {
             if (string.IsNullOrEmpty(ticker) || !m_TickerToKeyLevels.TryGetValue(ticker, out var keyLevels) || keyLevels.Length == 0) continue;

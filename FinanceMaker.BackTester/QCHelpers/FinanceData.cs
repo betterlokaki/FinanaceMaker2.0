@@ -39,8 +39,8 @@ public class FinanceData : BaseData
         end = end > DateTime.Now ? DateTime.Now : end;
         var filePath = Helper.SaveCandlestickDataToCsv(config.Symbol.Value,
                                 ConvertResolutionToPeriod(config.Resolution),
-                                                date,
-                                                end).Result;
+                                                StartDate,
+                                                EndDate).Result;
         return new SubscriptionDataSource(filePath, SubscriptionTransportMedium.LocalFile);
     }
 

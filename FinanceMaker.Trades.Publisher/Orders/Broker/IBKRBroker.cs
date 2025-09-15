@@ -16,7 +16,7 @@ using ITrade = FinanceMaker.Trades.Publisher.Orders.Trades.Interfaces.ITrade;
 
 namespace FinanceMaker.Publisher.Orders.Broker;
 
-public class IBKRBroker : BrokerrBase<EntryExitOutputIdea>
+public class IBKRBroker : BrokerBase<EntryExitOutputIdea>
 {
     private readonly IHttpClientFactory m_HttpClientFactory;
     private readonly HttpClientHandler m_Handler;

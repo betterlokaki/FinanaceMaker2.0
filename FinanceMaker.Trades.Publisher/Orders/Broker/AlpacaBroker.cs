@@ -9,7 +9,7 @@ using ITrade = FinanceMaker.Trades.Publisher.Orders.Trades.Interfaces.ITrade;
 
 namespace FinanceMaker.Publisher.Orders.Trader;
 
-public class AlpacaBroker : BrokerrBase<EntryExitOutputIdea>
+public class AlpacaBroker : BrokerBase<EntryExitOutputIdea>
 {
     // I really need to create both secrets and configs 
     const string API_KEY = "PKH61BCHIWNB11A588E2";

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace FinanceMaker.Brokers.InteractiveBrokers;
 
@@ -28,79 +29,82 @@ public sealed class IBKRHttpClient
         GetBrokerageAccountsAsync().GetAwaiter().GetResult();
     }
 
-    public async Task<Dictionary<string, object>> InitBrokerageSessionAsync()
+    public async Task<JsonNode> InitBrokerageSessionAsync()
     {
         var endpoint = "/iserver/auth/ssodh/init";
-        var payload = new Dictionary<string, object> { ["publish"] = true, ["compete"] = true };
+        var payload = JsonNode.Parse(JsonSerializer.Serialize(new { publish = true, compete = true }));
         return await PostAsync(endpoint, payload);
     }
 
-    public async Task<Dictionary<string, object>> LogoutAsync()
+    public async Task<JsonNode> LogoutAsync()
     {
         var endpoint = "/logout";
         return await PostAsync(endpoint, null);
     }
 
-    public async Task<Dictionary<string, object>> GetBrokerageAccountsAsync()
+    public async Task<IEnumerable<string>> GetBrokerageAccountsAsync()
     {
         var endpoint = "/iserver/accounts";
-        return await GetAsync(endpoint);
+        var data = await GetAsync(endpoint);
+        var accountsArray = data?["accounts"]?.AsArray();
+        return accountsArray?.Select(n => n?.GetValue<string>() ?? string.Empty)
+                           .Where(s => !string.IsNullOrEmpty(s))
+                           .ToList() ?? new List<string>();
     }
 
-    public async Task<List<Dictionary<string, object>>> PortfolioAccountsAsync()
+    public async Task<JsonArray> PortfolioAccountsAsync()
     {
         var endpoint = "/portfolio/accounts";
-        var p = await GetAsync(endpoint);
-        return (List<Dictionary<string, object>>)p["items"];
+        var response = await GetAsync(endpoint);
+        return response?["items"]?.AsArray() ?? new JsonArray();
     }
 
-    // Portfolio endpoints
-    public async Task<Dictionary<string, object>> PortfolioSubaccountsAsync()
+    public async Task<JsonNode> PortfolioSubaccountsAsync()
     {
         var endpoint = "/portfolio/subaccounts";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> PortfolioSubaccountsLargeAsync(int pageNumber = 0)
+    public async Task<JsonNode> PortfolioSubaccountsLargeAsync(int pageNumber = 0)
     {
         var endpoint = "/portfolio/subaccounts2";
         var query = new Dictionary<string, string> { ["page"] = pageNumber.ToString() };
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> PortfolioAccountMetadataAsync(string accountId)
+    public async Task<JsonNode> PortfolioAccountMetadataAsync(string accountId)
     {
         var endpoint = $"/portfolio/{accountId}/meta";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> PortfolioAccountAllocationAsync(string accountId)
+    public async Task<JsonNode> PortfolioAccountAllocationAsync(string accountId)
     {
         var endpoint = $"/portfolio/{accountId}/allocation";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> PortfolioAccountPositionsAsync(string accountId)
+    public async Task<JsonNode> PortfolioAccountPositionsAsync(string accountId)
     {
         var endpoint = $"/portfolio/{accountId}/combo/positions";
         var query = new Dictionary<string, string> { ["nocache"] = "true" };
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> PortfolioAllAllocationAsync(IEnumerable<string> accountIds)
+    public async Task<JsonNode> PortfolioAllAllocationAsync(IEnumerable<string> accountIds)
     {
         var endpoint = "/portfolio/allocation";
-        var body = new Dictionary<string, object> { ["acctIds"] = accountIds.ToArray() };
-        return await PostAsync(endpoint, body);
+        var payload = JsonNode.Parse(JsonSerializer.Serialize(new { acctIds = accountIds.ToArray() }));
+        return await PostAsync(endpoint, payload);
     }
 
-    public async Task<Dictionary<string, object>> GetPositionsAsync(string accountId, int pageId = 0)
+    public async Task<JsonNode> GetPositionsAsync(string accountId, int pageId = 0)
     {
         var endpoint = $"/portfolio/{accountId}/positions/{pageId}";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> GetAllPositionsAsync(string accountId, Models.SortingOrder sortingOrder)
+    public async Task<JsonNode> GetAllPositionsAsync(string accountId, Models.SortingOrder sortingOrder)
     {
         var endpoint = $"/portfolio2/{accountId}/positions";
         var direction = sortingOrder == Models.SortingOrder.Ascending ? "a" : "d";
@@ -108,225 +112,235 @@ public sealed class IBKRHttpClient
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> GetPositionsByContractIdAsync(string accountId, string contractId)
+    public async Task<JsonNode> GetPositionsByContractIdAsync(string accountId, string contractId)
     {
         var endpoint = $"/portfolio/{accountId}/position/{contractId}";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> InvalidateBackendPortfolioCacheAsync(string accountId)
-    {
-        var endpoint = $"/portfolio/{accountId}/positions/invalidate";
-        return await PostAsync(endpoint, null);
-    }
-
-    public async Task<Dictionary<string, object>> GetPortfolioSummaryAsync(string accountId)
+    public async Task<JsonNode> GetPortfolioSummaryAsync(string accountId)
     {
         var endpoint = $"/portfolio/{accountId}/summary";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> GetPortfolioLedgerAsync(string accountId)
+    public async Task<JsonNode> GetPortfolioLedgerAsync(string accountId)
     {
         var endpoint = $"/portfolio/{accountId}/ledger";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> GetPositionInfoByContractIdAsync(string contractId)
+    public async Task<JsonNode> GetPositionInfoByContractIdAsync(string contractId)
     {
         var endpoint = $"/portfolio/positions/{contractId}";
         return await GetAsync(endpoint);
     }
 
-    // Portfolio Analyst endpoints
-    public async Task<Dictionary<string, object>> GetAccountsPerformanceAsync(IEnumerable<string> accountIds, Models.Period period)
+    public async Task<JsonNode> GetAccountsPerformanceAsync(IEnumerable<string> accountIds, Models.Period period)
     {
         var endpoint = "/pa/performance";
         var periodStr = period switch { Models.Period.OneDay => "1D", Models.Period.OneWeek => "7D", Models.Period.MonthToDate => "MTD", Models.Period.OneMonth => "1M", Models.Period.YearToDate => "YTD", Models.Period.OneYear => "1Y", _ => "1D" };
-        var body = new Dictionary<string, object> { ["acctIds"] = accountIds.ToArray(), ["period"] = periodStr };
-        return await PostAsync(endpoint, body);
+        var payload = JsonNode.Parse(JsonSerializer.Serialize(new { acctIds = accountIds.ToArray(), period = periodStr }));
+        return await PostAsync(endpoint, payload);
     }
 
-    public async Task<Dictionary<string, object>> GetAccountsTransactionsAsync(IEnumerable<string> accountIds, IEnumerable<int> contractIds, Models.BaseCurrency currency = Models.BaseCurrency.USD, int days = 90)
+    public async Task<JsonNode> GetAccountsTransactionsAsync(IEnumerable<string> accountIds, IEnumerable<int> contractIds, Models.BaseCurrency currency = Models.BaseCurrency.USD, int days = 90)
     {
         var endpoint = "/pa/transactions";
-        var body = new Dictionary<string, object>
+        var payload = JsonNode.Parse(JsonSerializer.Serialize(new
         {
-            ["acctIds"] = accountIds.ToArray(),
-            ["conids"] = contractIds.ToArray(),
-            ["currency"] = currency.ToString(),
-            ["days"] = days,
-        };
-        return await PostAsync(endpoint, body);
+            acctIds = accountIds.ToArray(),
+            conids = contractIds.ToArray(),
+            currency = currency.ToString(),
+            days = days
+        }));
+        return await PostAsync(endpoint, payload);
     }
 
-    // Alerts endpoints
-    public async Task<Dictionary<string, object>> CreateAlertAsync(string accountId, Models.Alert alert)
+    public async Task<JsonNode> CreateAlertAsync(string accountId, Models.Alert alert)
     {
         var endpoint = $"/iserver/account/{accountId}/alert";
-        var body = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(System.Text.Json.JsonSerializer.Serialize(alert))!;
-        return await PostAsync(endpoint, body);
+        var json = JsonSerializer.SerializeToNode(alert);
+        return await PostAsync(endpoint, json);
     }
 
-    public async Task<Dictionary<string, object>> ModifyAlertAsync(string accountId, int alertId, Models.Alert alert)
+    public async Task<JsonNode> ModifyAlertAsync(string accountId, int alertId, Models.Alert alert)
     {
         var endpoint = $"/iserver/account/{accountId}/alert";
-        var body = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(System.Text.Json.JsonSerializer.Serialize(alert))!;
-        body["order_id"] = alertId;
-        return await PostAsync(endpoint, body);
+        var json = JsonSerializer.SerializeToNode(alert);
+        if (json != null)
+        {
+            json["order_id"] = alertId;
+        }
+        return await PostAsync(endpoint, json);
     }
 
-    public async Task<Dictionary<string, object>> GetAlertListAsync(string accountId)
+    public async Task<JsonNode> GetAlertListAsync(string accountId)
     {
         var endpoint = $"/iserver/account/{accountId}/alerts";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> DeleteAlertAsync(string accountId, string alertId)
+    public async Task<JsonNode> DeleteAlertAsync(string accountId, string alertId)
     {
         var endpoint = $"/iserver/account/{accountId}/alert/{alertId}";
         return await DeleteAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> DeleteAllAlertsAsync(string accountId)
+    public async Task<JsonNode> DeleteAllAlertsAsync(string accountId)
     {
         var endpoint = $"/iserver/account/{accountId}/alert/0";
         return await DeleteAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> SetAlertActivationAsync(string accountId, int alertId, bool alertActive)
+    public async Task<JsonNode> SetAlertActivationAsync(string accountId, int alertId, bool alertActive)
     {
         var endpoint = $"/iserver/account/{accountId}/alert/activate";
-        var body = new Dictionary<string, object> { ["alertId"] = alertId, ["alertActive"] = alertActive ? 1 : 0 };
-        return await PostAsync(endpoint, body);
+        var payload = JsonNode.Parse(JsonSerializer.Serialize(new { alertId, alertActive = alertActive ? 1 : 0 }));
+        return await PostAsync(endpoint, payload);
     }
 
-    public async Task<Dictionary<string, object>> GetAlertDetailsAsync(int alertId)
+    public async Task<JsonNode> GetAlertDetailsAsync(int alertId)
     {
         var endpoint = $"/iserver/account/alert/{alertId}";
         var query = new Dictionary<string, string> { ["type"] = "Q" };
         return await GetAsync(endpoint, null, query);
     }
 
-    // Watchlists endpoints
-    public async Task<Dictionary<string, object>> CreateWatchlistAsync(string watchlistId, string name, IEnumerable<int> contractIds)
+    public async Task<JsonNode> CreateWatchlistAsync(string watchlistId, string name, IEnumerable<int> contractIds)
     {
         var endpoint = "/iserver/watchlist";
-        var rows = contractIds.Select(id => new Dictionary<string, object> { ["C"] = id }).ToArray();
-        var body = new Dictionary<string, object> { ["id"] = watchlistId, ["name"] = name, ["rows"] = rows };
-        return await PostAsync(endpoint, body);
+        var rows = contractIds.Select(id => new Dictionary<string, object> { ["C"] = id });
+        var payload = JsonNode.Parse(JsonSerializer.Serialize(new { id = watchlistId, name, rows }));
+        return await PostAsync(endpoint, payload);
     }
 
-    public async Task<Dictionary<string, object>> GetAllWatchlistsAsync()
+    public async Task<JsonNode> GetAllWatchlistsAsync()
     {
         var endpoint = "/iserver/watchlists";
         var query = new Dictionary<string, string> { ["SC"] = "USER_WATCHLIST" };
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> GetWatchlistInfoAsync(string watchlistId)
+    public async Task<JsonNode> GetWatchlistInfoAsync(string watchlistId)
     {
         var endpoint = "/iserver/watchlist";
         var query = new Dictionary<string, string> { ["id"] = watchlistId };
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> DeleteWatchlistAsync(string watchlistId)
+    public async Task<JsonNode> DeleteWatchlistAsync(string watchlistId)
     {
         var endpoint = "/iserver/watchlist";
         var query = new Dictionary<string, string> { ["id"] = watchlistId };
         return await DeleteAsync(endpoint, null, query);
     }
 
-    // Scanner endpoints
-    public async Task<Dictionary<string, object>> GetIServerScannerParamsAsync()
+    public async Task<JsonNode> GetIServerScannerParamsAsync()
     {
         var endpoint = "/iserver/scanner/params";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> IServerMarketScannerAsync(string instrument, string location, string type, IEnumerable<Dictionary<string, object>> filters)
+    public async Task<JsonNode> IServerMarketScannerAsync(string instrument, string location, string type, IEnumerable<Dictionary<string, object>> filters)
     {
         var endpoint = "/iserver/scanner/run";
-        var body = new Dictionary<string, object> { ["instrument"] = instrument, ["location"] = location, ["type"] = type, ["filter"] = filters.ToArray() };
-        return await PostAsync(endpoint, body);
+        var payload = JsonNode.Parse(JsonSerializer.Serialize(new
+        {
+            instrument,
+            location,
+            type,
+            filter = filters.ToArray()
+        }));
+        return await PostAsync(endpoint, payload);
     }
 
-    public async Task<Dictionary<string, object>> GetHMDSScannerParamsAsync()
+    public async Task<JsonNode> GetHMDSScannerParamsAsync()
     {
         var endpoint = "/hmds/scanner/params";
         return await GetAsync(endpoint);
     }
+    public async Task<JsonArray> ReplayOrderAsync(string replyId)
+    {
 
-    // Contracts/Trsrv endpoints
-    public async Task<Dictionary<string, object>> GetSecurityDefinitionAsync(IEnumerable<int> contractIds)
+        var endpoint = $"/iserver/reply/{replyId}";
+        var payload = JsonNode.Parse(JsonSerializer.Serialize(new { confirmed = true }));
+        var result = await PostAsync(endpoint, payload);
+
+        return result.AsArray() ?? new JsonArray();
+    }
+    public async Task<JsonNode> GetSecurityDefinitionAsync(IEnumerable<int> contractIds)
     {
         var endpoint = "/trsrv/secdef";
         var query = new Dictionary<string, string> { ["conids"] = string.Join(",", contractIds) };
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> GetAllContractsAsync(string exchangeId)
+    public async Task<JsonNode> GetAllContractsAsync(string exchangeId)
     {
         var endpoint = "/trsrv/all-conids";
         var query = new Dictionary<string, string> { ["exchange"] = exchangeId };
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> GetContractInfoAsync(int contractId)
+    public async Task<JsonNode> GetContractInfoAsync(int contractId)
     {
         var endpoint = $"/iserver/contract/{contractId}/info";
         return await GetAsync(endpoint);
     }
 
-    public async Task<Dictionary<string, object>> GetContractInfoAndRulesAsync(int contractId, Models.OrderRule orderRule)
+    public async Task<JsonNode> GetContractInfoAndRulesAsync(int contractId, Models.OrderRule orderRule)
     {
         var endpoint = $"/iserver/contract/{contractId}/info-and-rules";
         var query = new Dictionary<string, string> { ["isBuy"] = (orderRule == Models.OrderRule.Buy).ToString().ToLowerInvariant() };
         return await GetAsync(endpoint, null, query);
     }
+    public async Task<JsonNode> GetOrders()
+    {
+        var endpoint = "/iserver/account/orders";
+        return await GetAsync(endpoint);
+    }
 
-    public async Task<Dictionary<string, object>> GetCurrencyPairsAsync(Models.BaseCurrency currency)
+    public async Task<JsonNode> GetCurrencyPairsAsync(Models.BaseCurrency currency)
     {
         var endpoint = "/iserver/currency/pairs";
         var query = new Dictionary<string, string> { ["currency"] = currency.ToString() };
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> GetCurrencyExchangeRateAsync(Models.BaseCurrency targetCurrency, Models.BaseCurrency sourceCurrency)
+    public async Task<JsonNode> GetCurrencyExchangeRateAsync(Models.BaseCurrency targetCurrency, Models.BaseCurrency sourceCurrency)
     {
         var endpoint = "/iserver/exchangerate";
         var query = new Dictionary<string, string> { ["target"] = targetCurrency.ToString(), ["source"] = sourceCurrency.ToString() };
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> GetFuturesBySymbolAsync(IEnumerable<string> symbols)
+    public async Task<JsonNode> GetFuturesBySymbolAsync(IEnumerable<string> symbols)
     {
         var endpoint = "/trsrv/futures";
         var query = new Dictionary<string, string> { ["symbols"] = string.Join(",", symbols) };
         return await GetAsync(endpoint, null, query);
     }
 
-    public async Task<Dictionary<string, object>> GetStocksBySymbolAsync(IEnumerable<string> symbols)
+    public async Task<JsonNode> GetStocksBySymbolAsync(IEnumerable<string> symbols)
     {
         var endpoint = "/trsrv/stocks";
         var query = new Dictionary<string, string> { ["symbols"] = string.Join(",", symbols) };
         return await GetAsync(endpoint, null, query);
     }
 
-    // Market Data
-    public async Task<Dictionary<string, object>> GetLiveMarketDataSnapshotAsync(IEnumerable<int> contractIds, IEnumerable<Models.MarketDataField> fields)
+    public async Task<JsonNode> GetLiveMarketDataSnapshotAsync(IEnumerable<int> contractIds, IEnumerable<Models.MarketDataField> fields)
     {
         var endpoint = "/iserver/marketdata/snapshot";
         var query = new Dictionary<string, string>
         {
             ["conids"] = string.Join(",", contractIds),
-            ["fields"] = string.Join(",", fields.Select(f => ((int)f).ToString())),
+            ["fields"] = string.Join(",", fields.Select(f => ((int)f).ToString()))
         };
         return await GetAsync(endpoint, null, query);
     }
 
-    private async Task<Dictionary<string, object>> GetAsync(string endpoint, Dictionary<string, object>? json = null, Dictionary<string, string>? query = null)
+    private async Task<JsonNode> GetAsync(string endpoint, JsonNode? json = null, Dictionary<string, string>? query = null)
     {
         var method = "GET";
         var url = BuildUrl(endpoint, query);
@@ -336,16 +350,15 @@ public sealed class IBKRHttpClient
         foreach (var kv in headers) request.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
         if (json != null)
         {
-            var body = System.Text.Json.JsonSerializer.Serialize(json);
-            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+            request.Content = new StringContent(json.ToJsonString(), Encoding.UTF8, "application/json");
         }
 
         using var response = await _httpClient.SendAsync(request);
         await EnsureSuccessWithDetails(response);
-        return await ReadJsonDictionaryAsync(response);
+        return await ReadJsonNodeAsync(response);
     }
 
-    private async Task<Dictionary<string, object>> PostAsync(string endpoint, Dictionary<string, object>? json = null, Dictionary<string, string>? query = null)
+    private async Task<JsonNode> PostAsync(string endpoint, JsonNode? json = null, Dictionary<string, string>? query = null)
     {
         var method = "POST";
         var url = BuildUrl(endpoint, query);
@@ -355,16 +368,15 @@ public sealed class IBKRHttpClient
         foreach (var kv in headers) request.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
         if (json != null)
         {
-            var body = System.Text.Json.JsonSerializer.Serialize(json);
-            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+            request.Content = new StringContent(json.ToJsonString(), Encoding.UTF8, "application/json");
         }
 
         using var response = await _httpClient.SendAsync(request);
         await EnsureSuccessWithDetails(response);
-        return await ReadJsonDictionaryAsync(response);
+        return await ReadJsonNodeAsync(response);
     }
 
-    private async Task<Dictionary<string, object>> DeleteAsync(string endpoint, Dictionary<string, object>? json = null, Dictionary<string, string>? query = null)
+    private async Task<JsonNode> DeleteAsync(string endpoint, JsonNode? json = null, Dictionary<string, string>? query = null)
     {
         var method = "DELETE";
         var url = BuildUrl(endpoint, query);
@@ -374,13 +386,12 @@ public sealed class IBKRHttpClient
         foreach (var kv in headers) request.Headers.TryAddWithoutValidation(kv.Key, kv.Value);
         if (json != null)
         {
-            var body = System.Text.Json.JsonSerializer.Serialize(json);
-            request.Content = new StringContent(body, Encoding.UTF8, "application/json");
+            request.Content = new StringContent(json.ToJsonString(), Encoding.UTF8, "application/json");
         }
 
         using var response = await _httpClient.SendAsync(request);
         await EnsureSuccessWithDetails(response);
-        return await ReadJsonDictionaryAsync(response);
+        return await ReadJsonNodeAsync(response);
     }
 
     private string BuildUrl(string endpoint, Dictionary<string, string>? query)
@@ -403,7 +414,7 @@ public sealed class IBKRHttpClient
         throw new HttpRequestException($"Request failed: {(int)response.StatusCode} {response.StatusCode}, content: {content}");
     }
 
-    private static async Task<Dictionary<string, object>> ReadJsonDictionaryAsync(HttpResponseMessage response)
+    private static async Task<JsonNode> ReadJsonNodeAsync(HttpResponseMessage response)
     {
         await using var stream = await response.Content.ReadAsStreamAsync();
         Stream finalStream = stream;
@@ -412,20 +423,18 @@ public sealed class IBKRHttpClient
             finalStream = new System.IO.Compression.GZipStream(stream, System.IO.Compression.CompressionMode.Decompress);
         }
 
-        // Parse once and inspect root type
-        var doc = await JsonDocument.ParseAsync(finalStream);
-        if (doc.RootElement.ValueKind == JsonValueKind.Object)
-        {
-            var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(doc.RootElement.GetRawText());
-            return dict ?? new Dictionary<string, object>();
-        }
-        else if (doc.RootElement.ValueKind == JsonValueKind.Array)
-        {
-            var list = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(doc.RootElement.GetRawText());
-            return new Dictionary<string, object> { ["items"] = list ?? new List<Dictionary<string, object>>() };
-        }
-        // Fallback: empty dictionary
-        return new Dictionary<string, object>();
+        // Parse once and convert to JsonNode
+        using var doc = await JsonDocument.ParseAsync(finalStream);
+        var jsonString = doc.RootElement.GetRawText();
+        return JsonNode.Parse(jsonString) ?? JsonNode.Parse("{}") ?? throw new InvalidOperationException("Failed to parse JSON response");
+    }
+
+    public async Task<JsonNode> PlaceOrderAsync(string accountId, JsonNode[] orders)
+    {
+        var endpoint = $"/iserver/account/{accountId}/orders";
+        var payload = JsonNode.Parse(JsonSerializer.Serialize(new { orders }));
+        var result = await PostAsync(endpoint, payload);
+        return result?.AsArray() ?? new JsonArray();
     }
 }
 

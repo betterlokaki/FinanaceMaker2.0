@@ -4,13 +4,13 @@ using System.Net.Http;
 using FinanceMaker.Algorithms;
 using FinanceMaker.Algorithms.News.Analyziers;
 using FinanceMaker.Algorithms.News.Analyziers.Interfaces;
+using FinanceMaker.Brokers.InteractiveBrokers;
 using FinanceMaker.Common;
 using FinanceMaker.Common.Models.Ideas.IdeaInputs;
 using FinanceMaker.Common.Models.Ideas.IdeaOutputs;
 using FinanceMaker.Ideas.Ideas;
 using FinanceMaker.Ideas.Ideas.Abstracts;
 using FinanceMaker.Publisher.Orders.Broker;
-using FinanceMaker.Publisher.Orders.Trader;
 using FinanceMaker.Publisher.Orders.Trader.Interfaces;
 using FinanceMaker.Publisher.Traders;
 using FinanceMaker.Publisher.Traders.Interfaces;
@@ -112,7 +112,25 @@ var app = Host.CreateDefaultBuilder(args)
                 services.AddSingleton<IdeaBase<TechnicalIdeaInput, EntryExitOutputIdea>, OverNightBreakout>();
                 services.AddSingleton<OverNightBreakout>();
                 services.AddSingleton<IBKRClient>();
-                services.AddSingleton<IBroker, IBKRBroker>();
+                var consumerKey = Environment.GetEnvironmentVariable("IBKR_CONSUMER_KEY") ?? "SHROZOSHR";
+                var tokenAccess = Environment.GetEnvironmentVariable("IBKR_TOKEN") ?? "d583aac6335668f1f6b9";
+                var tokenSecret = Environment.GetEnvironmentVariable("IBKR_TOKEN_SECRET") ?? "ni3WiVII+DhvPAav6OHnVGU87x/wAcc6qkp/l5gyVmfDfPnp7umsq8DWxjQ79UHE0TxdlgfeKzF1lHxCFIcRltCtPeQCl9uaHEG3cxkFMiziKmqrUNDnGAtPgvSwAeNJ0xDLCujvPh/HnK37av+7bRRI+3hDvty4C/XX4M/J3dWd8tH7ei/G6x6kiDfmWxGBERHw0DfrhqncUJ2ujWTkRy8UjGLgnH4oJrcPfnyBgMSY/OsFvMN2WbxRD8+TBPTu6DeMsZJc83m9nJC3HiAMzesfXae65iJgM0m366jSavQnrKPWOjp9EeuJZceui2sUsxUR3pVJJHQzK6LcG0hfKA==";
+
+                var dhParamPath = Environment.GetEnvironmentVariable("IBKR_DH_PARAM") ?? "/Users/shaharrozolio/dhparam.pem";
+                var dhPrivateEncryption = Environment.GetEnvironmentVariable("IBKR_DH_PRIVATE_ENCRYPTION") ?? "/Users/shaharrozolio/private_encryption.pem";
+                var dhPrivateSignature = Environment.GetEnvironmentVariable("IBKR_DH_PRIVATE_SIGNATURE") ?? "/Users/shaharrozolio/private_signature.pem";
+
+                var config = new IBKRConfig
+                {
+                    ConsumerKey = consumerKey,
+                    TokenAccess = tokenAccess,
+                    TokenSecret = tokenSecret,
+                    DiffieHellmanParamPath = dhParamPath,
+                    DiffieHellmanPrivateEncryptionPath = dhPrivateEncryption,
+                    DiffieHellmanPrivateSignaturePath = dhPrivateSignature,
+                };
+                services.AddSingleton<IBKRConfig>(config);
+                services.AddSingleton<IBroker, InteracrtiveBroker>();
                 services.AddSingleton<ITrader, QCTrader>();
                 services.AddSingleton<Worker>();
 

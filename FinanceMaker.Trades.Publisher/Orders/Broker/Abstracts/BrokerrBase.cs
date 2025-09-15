@@ -6,7 +6,7 @@ using FinanceMaker.Trades.Publisher.Orders.Trades.Interfaces;
 
 namespace FinanceMaker.Publisher.Orders.Trader.Abstracts;
 
-public abstract class BrokerrBase<T> : IBroker
+public abstract class BrokerBase<T> : IBroker
     where T : GeneralOutputIdea
 {
     public abstract TraderType Type { get; }

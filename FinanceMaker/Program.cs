@@ -5,7 +5,7 @@ Console.WriteLine("Hello, World!");
 
 // Client Portal Web API usually uses self-signed certs, so bypass validation (for dev only!)
 
-BackTester.Runner(typeof(MultiAlgorithm));
+BackTester.Runner(typeof(RangePlusAlgorithm));
 // var data = StaticContainer.ServiceProvider.GetService<IPricesPuller>();
 // var candles = await data!.GetTickerPrices(new PricesPullerParameters("MNDY", new DateTime(2025, 1, 1), DateTime.Now, Period.Daily), CancellationToken.None);
 // var volumes = candles.Select(_ => (_.Volume, _.Time));

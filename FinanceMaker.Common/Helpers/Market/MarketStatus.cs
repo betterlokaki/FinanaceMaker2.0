@@ -21,7 +21,8 @@ public class MarketStatus
             var marketData = await JsonSerializer.DeserializeAsync<MarketOpenResponse>(response, cancellationToken: cancellationToken);
 
             if (marketData is null) return false;
-            return marketData!.IsOpen;
+            return marketData!.IsOpen
+               && DateTime.UtcNow.TimeOfDay >= new TimeSpan(14, 32, 0);
             // return marketData!.IsOpen || marketData.Session == "pre-market" || marketData.Session == "post-market";
         }
         catch

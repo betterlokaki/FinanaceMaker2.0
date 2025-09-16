@@ -126,13 +126,13 @@ public class RangePlusAlgorithm : QCAlgorithm
 
                         if (!isBearishReversal)
                         {
-                            Buy(data.Symbol);
+                            Buy(data.Symbol, data);
 
                         }
 
                         else if (data.CandleStick.Pivot == Common.Models.Finance.Enums.Pivot.Low)
                         {
-                            Buy(data.Symbol);
+                            Buy(data.Symbol, data);
                             return;
                         }
 

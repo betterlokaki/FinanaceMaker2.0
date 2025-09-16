@@ -19,7 +19,7 @@ Console.WriteLine("Hello, World!");
 //     System.Console.WriteLine($"{volume.Volume}, {volume.Time}");
 // }
 // RealTimeTester.Runner(typeof(RangeAlgoritm));
-
+BackTester.Runner(typeof(RangePlusAlgorithm));
 // IBKR example replication from get_ib_portfolio.py
 // Load DH parameters from PEM file
-await InteractiveWebAPI.RunAsync();
+// await InteractiveWebAPI.RunAsync();

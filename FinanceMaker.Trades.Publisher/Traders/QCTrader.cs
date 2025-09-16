@@ -95,7 +95,7 @@ public class QCTrader : ITrader
             //Bitcoin miners
             "HUT",
             // Cars
-            "PLTR", "AAPL", "GOGGL"
+            "PLTR", "AAPL", "GOOGL"
         ];
 
         tickers = tickers.Distinct().ToList();

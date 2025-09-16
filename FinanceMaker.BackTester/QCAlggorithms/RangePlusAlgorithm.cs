@@ -29,7 +29,7 @@ public class RangePlusAlgorithm : QCAlgorithm
     /// </summary>
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-29);
+        var startDate = DateTime.Now.Date.AddDays(-1);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
@@ -109,7 +109,7 @@ public class RangePlusAlgorithm : QCAlgorithm
             if (valueDivision <= 1.0001 && valueDivision >= 0.9999 && count > 1)
             {
 
-                var symbol = data.Symbol.Value;
+                var symbol = data.Symbol;
                 var holdingsq = Securities[symbol].Holdings.Quantity;
                 if (holdingsq == 0)
                 {
@@ -168,9 +168,9 @@ public class RangePlusAlgorithm : QCAlgorithm
     /// Executes a buy order for the given symbol.
     /// </summary>
     /// <param name="symbol">The symbol to buy.</param>
-    public void Buy(Symbol symbol)
+    public void Buy(Symbol symbol, FinanceData data)
     {
-        Debug("Trying to buy " + symbol.Value);
+        Debug($"Trying to buy  {symbol.Value} at price {data.CandleStick.Close}");
         float p = 1f / m_TickerToKeyLevels.Count;
         SetHoldings(symbol, p);
     }

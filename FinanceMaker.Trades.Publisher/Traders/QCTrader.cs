@@ -61,7 +61,7 @@ public class QCTrader : ITrader
                                        .ToArray();
         if (!tickersToTrade.Any())
         {
-            tickersToTrade = [("NIO", 6.00f)];
+            tickersToTrade = [("PLTR", 6.00f)];
         }
         var buyingPower = currentPosion.BuyingPower;
         var moneyForEachTrade = STARTED_MONEY * 0.5f;

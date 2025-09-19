@@ -29,7 +29,7 @@ public class RangePlusAlgorithm : QCAlgorithm
     /// </summary>
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-1);
+        var startDate = DateTime.Now.Date.AddDays(-29);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
@@ -47,7 +47,7 @@ public class RangePlusAlgorithm : QCAlgorithm
         m_ProblematicTickers = ["HUT", "ENPH"];
         // Define candidate tickers (Big 7, Intel, and other large-cap tech)
         tickers = [
-           "HUT", "AAPL", "BABA"
+             "OPEN", "SEDG", "HUT", "AAPL"
         ];
         tickers = tickers.Distinct().ToList();
         var rangeAlgorithm = serviceProvider.GetService<RangeAlgorithmsRunner>();
@@ -100,6 +100,13 @@ public class RangePlusAlgorithm : QCAlgorithm
 
         if (!m_TickerToKeyLevels.TryGetValue(ticker, out var keyLevels)) return;
         if (data.Time.Hour < 8) return;
+        var symbol = data.Symbol;
+        var holdingsq = Securities[symbol].Holdings.Quantity;
+        if (holdingsq > 0)
+        {
+            SellLogic(data);
+            return;
+        }
         int count = 0;
         foreach (var value in keyLevels)
         {
@@ -108,40 +115,38 @@ public class RangePlusAlgorithm : QCAlgorithm
 
             if (valueDivision <= 1.0001 && valueDivision >= 0.9999 && count > 1)
             {
-
-                var symbol = data.Symbol;
-                var holdingsq = Securities[symbol].Holdings.Quantity;
-                if (holdingsq == 0)
+                var previousHistory = History<FinanceData>(data.Symbol, 90, m_TestingPeriod);
+                if (previousHistory is not null && previousHistory.Any() && previousHistory.Count() >= 90)
                 {
-                    var previousHistory = History<FinanceData>(data.Symbol, 90, m_TestingPeriod);
-                    if (previousHistory is not null && previousHistory.Any() && previousHistory.Count() >= 90)
+
+                    var spyResult2 = previousHistory.Select(_ => _.CandleStick).ToList();
+                    bool isBullishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close < c.Open) &&
+                    spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close > c.Open);
+
+                    bool isBearishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close > c.Open) &&
+                                                spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close < c.Open);
+
+                    if (!isBearishReversal)
                     {
-
-                        var spyResult2 = previousHistory.Select(_ => _.CandleStick).ToList();
-                        bool isBullishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close < c.Open) &&
-                        spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close > c.Open);
-
-                        bool isBearishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close > c.Open) &&
-                                                    spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close < c.Open);
-
-                        if (!isBearishReversal)
-                        {
-                            Buy(data.Symbol, data);
-
-                        }
-
-                        else if (data.CandleStick.Pivot == Common.Models.Finance.Enums.Pivot.Low)
-                        {
-                            Buy(data.Symbol, data);
-                            return;
-                        }
+                        Buy(data.Symbol, data);
 
                     }
+
+                    else if (data.CandleStick.Pivot == Common.Models.Finance.Enums.Pivot.Low)
+                    {
+                        Buy(data.Symbol, data);
+                        return;
+                    }
+
+
                 }
             }
 
 
         }
+    }
+    private void SellLogic(FinanceData data)
+    {
         var holdings = Securities[data.Symbol].Holdings;
         var avgPrice = holdings.AveragePrice;
         var currentPrice = (decimal)data.CandleStick.Close;
@@ -172,7 +177,7 @@ public class RangePlusAlgorithm : QCAlgorithm
     {
         Debug($"Trying to buy  {symbol.Value} at price {data.CandleStick.Close}");
         float p = 1f / m_TickerToKeyLevels.Count;
-        SetHoldings(symbol, p);
+        SetHoldings(symbol, 0.5);
     }
 
     /// <summary>

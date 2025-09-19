@@ -162,6 +162,8 @@ public class InteracrtiveBroker : BrokerBase<EntryExitOutputIdea>
 
         while (attempt < maxAttempts)
         {
+            // https://github.com/Voyz/ibind/blob/master/ibind/client/ibkr_utils.py#L277
+            // Here will be the answers maybe
             var data = await _client.ReplayOrderAsync(replayId);
             replayData = data?.AsArray();
             var firstOrder = replayData?.FirstOrDefault();

@@ -59,11 +59,12 @@ public class QCTrader : ITrader
                                        .ToArray();
         var buyingPower = currentPosion.BuyingPower;
         var moneyForEachTrade = STARTED_MONEY * 0.5f;
-        if (buyingPower < moneyForEachTrade && buyingPower / moneyForEachTrade < 0.6) return;
+        // if (buyingPower < moneyForEachTrade && buyingPower / moneyForEachTrade < 0.6) return;
         if (buyingPower < moneyForEachTrade)
         {
             moneyForEachTrade = buyingPower * 0.78f;
         }
+        if (moneyForEachTrade < 100) return;
         // if (moneyForEachTrade < STARTED_MONEY / NUMBER_OF_OPEN_TRADES) return;
 
         foreach (var tickerPrice in tickersToTrade)
@@ -154,7 +155,7 @@ public class QCTrader : ITrader
 
                     var valueDivision = Math.Abs(lastCandleStick.Close) / keylevel;
 
-                    bool nearKeyLevel = valueDivision <= 1.005 && valueDivision >= 0.995;
+                    bool nearKeyLevel = valueDivision <= 1.000001 && valueDivision >= 0.995;
                     var previousHistory = recentCandles;
 
                     if (previousHistory is not null && previousHistory.Any() && nearKeyLevel)

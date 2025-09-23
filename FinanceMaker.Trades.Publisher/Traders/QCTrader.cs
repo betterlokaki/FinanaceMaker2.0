@@ -96,7 +96,8 @@ public class QCTrader : ITrader
             //Bitcoin miners
             "HUT",
             // Cars
-            "OPEN", "AAPL", "SEDG"
+            "OPEN", "AAPL", "SEDG",
+            "PLUG"
         ];
 
         tickers = tickers.Distinct().ToList();
@@ -155,7 +156,7 @@ public class QCTrader : ITrader
 
                     var valueDivision = Math.Abs(lastCandleStick.Close) / keylevel;
 
-                    bool nearKeyLevel = valueDivision <= 1.000001 && valueDivision >= 0.995;
+                    bool nearKeyLevel = valueDivision <= 1 && valueDivision >= 0.995;
                     var previousHistory = recentCandles;
 
                     if (previousHistory is not null && previousHistory.Any() && nearKeyLevel)

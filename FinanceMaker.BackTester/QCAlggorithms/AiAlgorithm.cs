@@ -149,7 +149,7 @@ public class AiAlgorithm : QCAlgorithm
             foreach (var value in keyLevels)
             {
                 var valueDivision = price / value;
-                if (valueDivision <= 1.03 && valueDivision >= 0.999999)
+                if (valueDivision <= 1.015 && valueDivision >= 0.985)
                 {
 
                     var symbol = data.Symbol;

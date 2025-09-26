@@ -34,6 +34,8 @@ public class QCTrader : ITrader
     private readonly IBroker m_Broker;
     private const int NUMBER_OF_OPEN_TRADES = 3;
     private const int STARTED_MONEY = 10_500;
+    private readonly Dictionary<string, float[]> m_TickerSupport = new();
+    private readonly Dictionary<string, float[]> m_TickerResistance = new();
     public QCTrader(MainTickersPuller pricesPuller,
                     RangeAlgorithmsRunner rangeAlgorithmsRunner,
                     IPricesPuller mainPricesPuller,
@@ -43,6 +45,12 @@ public class QCTrader : ITrader
         m_RangeAlgorithmsRunner = rangeAlgorithmsRunner;
         m_Broker = broker;
         m_PricesPuller = mainPricesPuller;
+        m_TickerSupport["AAPL"] = [115.19f, 128.17f, 142.92f, 156.17f, 169.88f, 186.34f, 203.14f, 217.7f, 228.7f, 245.13f];
+        m_TickerResistance["AAPL"] = [119.15f, 131.3f, 144.73f, 155.66f, 168.29f, 178.48f, 192.4f, 211.81f, 228.86f, 246.27f];
+        m_TickerSupport["INTC"] = [20.08f, 23.73f, 27.55f, 30.94f, 34.96f, 41.48f, 45.09f, 48.85f, 51.9f, 57.34f];
+        m_TickerResistance["INTC"] = [21.09f, 25.19f, 29.73f, 33.61f, 36.7f, 42.3f, 45.91f, 49.51f, 52.55f, 58.51f];
+        m_TickerSupport["PLTR"] = [8.48f, 15.89f, 23.76f, 36.68f, 67.02f, 83.26f, 111.03f, 132.53f, 154.02f, 175.73f];
+        m_TickerResistance["PLTR"] = [9.04f, 16.91f, 25.19f, 38.84f, 69.67f, 87.91f, 118.8f, 138.48f, 158.88f, 180.78f];
     }
 
     public async Task Trade(CancellationToken cancellationToken)
@@ -105,76 +113,14 @@ public class QCTrader : ITrader
 
         await Parallel.ForEachAsync(tickers, async (ticker, ca) =>
         {
+            if (m_TickerSupport.TryGetValue(ticker, out var supports))
             {
-                // Cache the daily range result to avoid recomputation within the same day
-                if (_dailyRangeCache.TryGetValue(ticker, out var mip) && mip.date < DateTime.Today)
+                var prices = await m_PricesPuller.GetTickerPrices(PricesPullerParameters.GetTodayParams(ticker), ca);
+                var lastPrice = prices.Last().Close;
+                var isNearSupport = supports.Any(support => Math.Abs((lastPrice - support) / support) < 0.015f);
+                if (isNearSupport)
                 {
-                    // Remove not relevant to not blow tthe machine
-                    _dailyRangeCache.Remove(ticker, out var p);
-                }
-                KeyLevelCandleSticks candleSticks;
-
-                if (_dailyRangeCache.TryGetValue(ticker, out var cached))
-                {
-                    candleSticks = cached.result;
-                }
-                else
-                {
-                    var range = await m_RangeAlgorithmsRunner.Run<EMACandleStick>(
-                        new RangeAlgorithmInput(new PricesPullerParameters(
-                            ticker,
-                            DateTime.Now.AddYears(-5),
-                            DateTime.Now,
-                            Common.Models.Pullers.Enums.Period.Daily), Algorithm.KeyLevels), cancellationToken);
-
-                    if (range is not KeyLevelCandleSticks ks || !ks.Any())
-                        return;
-
-                    candleSticks = ks;
-                    _dailyRangeCache[ticker] = (DateTime.Today, ks);
-                }
-
-                var interdayCandles = await m_RangeAlgorithmsRunner.Run<EMACandleStick>(
-                    new RangeAlgorithmInput(PricesPullerParameters.GetTodayParams(ticker), Algorithm.KeyLevels),
-                                                                                        cancellationToken);
-                int numberOfCandles = 90;
-                if (interdayCandles is not KeyLevelCandleSticks interdayCandleSticks ||
-                    !interdayCandleSticks.Any() ||
-                    interdayCandleSticks.Count < numberOfCandles)
-                    return;
-                var keyLevels = candleSticks.KeyLevels.OrderByDescending(_ => _).Skip(1);
-                foreach (var keylevel in keyLevels)
-                {
-                    var lastCandleStick = interdayCandleSticks.Last();
-
-                    var recentCandles = interdayCandleSticks[^numberOfCandles..]; // last 4 candles
-                                                                                  // If we want to use the average value of the last 2 candles, we can uncomment the next line
-                                                                                  // This is not the best way to do it, but it will work for now
-                                                                                  // var averageValue = recentCandles[^2..].Average(candle => candle.Close);  
-                                                                                  // var averageValue = recentCandles[..2].Average(candle => candle.Close);
-
-                    var valueDivision = Math.Abs(lastCandleStick.Close) / keylevel;
-
-                    bool nearKeyLevel = valueDivision <= 1 && valueDivision >= 0.995;
-                    var previousHistory = recentCandles;
-
-                    if (previousHistory is not null && previousHistory.Any() && nearKeyLevel)
-                    {
-                        var spyResult2 = previousHistory.Select(_ => _).ToList();
-                        bool isBullishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close < c.Open) &&
-                      spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close > c.Open);
-
-                        bool isBearishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close > c.Open) &&
-                                                  spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close < c.Open);
-
-                        if (isBearishReversal) return;
-
-                        {
-                            relevantTickers.Add((ticker, lastCandleStick.Close));
-                            break;
-                        }
-                    }
-
+                    relevantTickers.Add((ticker, prices.Last().Low));
                 }
             }
         });

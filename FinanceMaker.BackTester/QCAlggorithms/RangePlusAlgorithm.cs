@@ -31,11 +31,11 @@ public class RangePlusAlgorithm : QCAlgorithm
     /// </summary>
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-1);
+        var startDate = DateTime.Now.Date.AddDays(-7);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
-        SetCash(9_900); // Starting cash for the algorithm
+        SetCash(10_000); // Starting cash for the algorithm
         SetStartDate(startDate);
         SetEndDate(endDate);
         SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(2.5m))); // $1 per trade
@@ -49,7 +49,7 @@ public class RangePlusAlgorithm : QCAlgorithm
         m_ProblematicTickers = ["HUT", "ENPH"];
         // Define candidate tickers (Big 7, Intel, and other large-cap tech)
         tickers = [
-            "PLTR", "HUT", "GOOGL", "AAPL"
+            "PLTR","AAPL", "INTC", "SEDG"
         ];
         tickers = tickers.Distinct().ToList();
         var rangeAlgorithm = serviceProvider.GetService<RangeAlgorithmsRunner>();
@@ -103,57 +103,66 @@ public class RangePlusAlgorithm : QCAlgorithm
         if (!m_TickerToKeyLevels.TryGetValue(ticker, out var keyLevels)) return;
         if (data.Time.Hour < 8) return;
         int count = 0;
-        foreach (var value in keyLevels)
+        float[] pricesBuy = [data.CandleStick.High, data.CandleStick.Open, data.CandleStick.Close, data.CandleStick.Low];
+        foreach (var price in pricesBuy)
         {
-            var valueDivision = Math.Abs((float)data.CandleStick.Close) / value;
-            count++;
-
-            if (valueDivision <= 1.0001 && valueDivision >= 0.9999 && count > 1)
+            if (price <= 0) continue;
+            foreach (var value in keyLevels)
             {
+                var valueDivision = Math.Abs((float)data.CandleStick.Close) / value;
+                count++;
 
-                var symbol = data.Symbol;
-                var holdingsq = Securities[symbol].Holdings.Quantity;
-                if (holdingsq == 0)
+                if (valueDivision <= 1.005 && valueDivision >= 0.995)
                 {
-                    var previousHistory = History<FinanceData>(data.Symbol, 90, m_TestingPeriod);
-                    if (previousHistory is not null && previousHistory.Any() && previousHistory.Count() >= 90)
+
+                    var symbol = data.Symbol;
+                    var holdingsq = Securities[symbol].Holdings.Quantity;
+                    if (holdingsq == 0)
                     {
+                        // var previousHistory = History<FinanceData>(data.Symbol, 90, m_TestingPeriod);
+                        // if (previousHistory is not null && previousHistory.Any() && previousHistory.Count() >= 90)
+                        {
 
-                        var spyResult2 = previousHistory.Select(_ => _.CandleStick).ToList();
-                        bool isBullishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close < c.Open) &&
-                        spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close > c.Open);
+                            // var spyResult2 = previousHistory.Select(_ => _.CandleStick).ToList();
+                            // bool isBullishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close < c.Open) &&
+                            // spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close > c.Open);
 
-                        bool isBearishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close > c.Open) &&
-                                                    spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close < c.Open);
+                            // bool isBearishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close > c.Open) &&
+                            //                             spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close < c.Open);
 
-                        if (isBearishReversal) return;
+                            // if (isBearishReversal) return;
 
-                        Buy(data.Symbol, data);
+                            Buy(data.Symbol, data);
 
+                        }
                     }
                 }
+
+
             }
-
-
         }
         var holdings = Securities[data.Symbol].Holdings;
         var avgPrice = holdings.AveragePrice;
         var currentPrice = (decimal)data.CandleStick.Close;
-
-        if (holdings.Quantity > 0)
+        float[] sellPrices = [data.CandleStick.Low, data.CandleStick.Open, data.CandleStick.Close, data.CandleStick.High];
+        foreach (var price in sellPrices)
         {
-
-
-            if (currentPrice >= avgPrice * 1.02m || currentPrice <= avgPrice * 0.985m)
+            if (price <= 0) continue;
+            if (holdings.Quantity > 0)
             {
-                Sell(data.Symbol);
+
+
+                if (currentPrice >= avgPrice * 1.02m || currentPrice <= avgPrice * 0.985m)
+                {
+                    Sell(data.Symbol);
+                }
             }
-        }
-        else if (holdings.Quantity < 0)
-        {
-            if (currentPrice >= avgPrice * 1.015m || currentPrice <= avgPrice * 0.975m)
+            else if (holdings.Quantity < 0)
             {
-                Sell(data.Symbol);
+                if (currentPrice >= avgPrice * 1.015m || currentPrice <= avgPrice * 0.975m)
+                {
+                    Sell(data.Symbol);
+                }
             }
         }
     }

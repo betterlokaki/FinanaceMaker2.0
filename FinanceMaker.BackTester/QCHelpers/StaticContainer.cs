@@ -1,6 +1,8 @@
 ﻿using FinanceMaker.Algorithms;
 using FinanceMaker.Algorithms.News.Analyziers;
 using FinanceMaker.Algorithms.News.Analyziers.Interfaces;
+using FinanceMaker.Algorithms.Runners;
+using FinanceMaker.BackTester.QCAlggorithms;
 using FinanceMaker.Common;
 using FinanceMaker.Common.Models.Ideas.IdeaInputs;
 using FinanceMaker.Common.Models.Ideas.IdeaOutputs;
@@ -91,6 +93,7 @@ public static class StaticContainer
         services.AddSingleton<INewsAnalyzer, NewsAnalyzer>();
         services.AddSingleton<IdeaBase<TechnicalIdeaInput, EntryExitOutputIdea>, OverNightBreakout>();
         services.AddSingleton<OverNightBreakout>();
+        services.AddSingleton<FibonachiRunner>();
 
         ServiceProvider = services.BuildServiceProvider();
     }

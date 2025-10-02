@@ -5,5 +5,6 @@ public enum Algorithm
     BreakoutDetection,
     EMA,
     KeyLevels,
-    TrendDetection
+    TrendDetection,
+    Fibonachi
 }

@@ -8,12 +8,13 @@ using FinanceMaker.Pullers.TickerPullers;
 using Microsoft.Extensions.DependencyInjection;
 using QuantConnect;
 using QuantConnect.Algorithm;
+using QuantConnect.Data.Market;
+using QuantConnect.Indicators;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
-
 namespace FinanceMaker.BackTester.QCAlggorithms;
 
-public class AiAlgorithm : QCAlgorithm
+public class EMAAlgorithm : QCAlgorithm
 {
     private Dictionary<string, float[]> m_TickerToKeyLevels = new();
     private Dictionary<string, float> m_TickerToMoney = new();
@@ -25,8 +26,6 @@ public class AiAlgorithm : QCAlgorithm
     private Dictionary<string, int> m_TickerToWin = new();
     private Dictionary<string, float[]> m_TickerSupport = new();
     private Dictionary<string, float[]> m_TickerResistance = new();
-    private Dictionary<string, float> m_BuyKeyLevel = new();
-
     /// <summary>
     /// Initializes the algorithm, loads tickers and key levels, and sets up securities.
     /// </summary>
@@ -51,16 +50,18 @@ public class AiAlgorithm : QCAlgorithm
     // 20250926 14:05:53.658 TRACE:: Debug: Ticker: AMD, Realized P&L: -₪1,185.31
     // 20250926 14:05:53.658 TRACE:: Debug: Ticker: AMZN, Realized P&L: -₪1,220.64
     // 20250926 14:05:53.658 TRACE:: Debug: Ticker: MSFT, Realized P&L: -₪1,409.35
+    private Dictionary<string, ExponentialMovingAverage> _ema50 = [];
+    private Dictionary<string, ExponentialMovingAverage> _ema200 = [];
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-7);
+        var startDate = DateTime.Now.Date.AddDays(-29);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
         SetCash(10_000); // Starting cash for the algorithm
         SetStartDate(startDate);
         SetEndDate(endDate);
-        SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(0))); // $1 per trade
+        SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(2.5m))); // $1 per trade
         FinanceData.StartDate = startDate;
         FinanceData.EndDate = endDate;
 
@@ -69,25 +70,37 @@ public class AiAlgorithm : QCAlgorithm
         List<string> tickers = [];
         m_TestingPeriod = Resolution.Minute;
         // Define candidate tickers (Big 7, Intel, and other large-cap tech)
-        m_TickerSupport["PLTR"] = [7.82f, 10.22f, 13.61f, 16.19f, 18.71f, 21.74f, 24.05f, 26.34f, 29.2f, 32.24f, 36.81f, 43.04f, 58.18f, 66.13f, 73.71f, 81.37f, 89.84f, 98.05f, 109.13f, 118.52f, 126.03f, 133.06f, 140.01f, 146.4f, 153.52f, 159.84f, 169.57f, 177.89f, 185.23f];
-        m_TickerSupport["GOOGL"] = [77.38f, 87.05f, 90.82f, 95.15f, 98.77f, 102.49f, 106.42f, 111.41f, 114.79f, 118.29f, 121.89f, 126.56f, 132.0f, 136.89f, 142.07f, 147.74f, 154.76f, 161.03f, 165.57f, 170.59f, 176.1f, 182.77f, 189.0f, 195.02f, 201.65f, 209.18f, 234.35f, 243.29f, 252.32f];
-        m_TickerSupport["AES"] = [10.16f, 10.94f, 11.79f, 12.62f, 13.16f, 13.71f, 14.78f, 15.69f, 16.3f, 16.85f, 17.36f, 18.01f, 18.69f, 19.39f, 20.04f, 20.58f, 21.09f, 21.64f, 22.33f, 23.01f, 23.65f, 24.24f, 24.87f, 25.53f, 26.25f, 27.05f, 27.73f, 28.21f, 28.84f];
-        m_TickerSupport["XPEV"] = [7.28f, 8.38f, 9.54f, 10.19f, 10.89f, 12.46f, 14.22f, 15.8f, 17.33f, 18.55f, 19.86f, 21.11f, 22.84f, 24.7f, 26.97f, 28.93f, 30.83f, 32.93f, 35.3f, 37.37f, 39.55f, 41.52f, 43.65f, 45.73f, 47.83f, 50.39f, 54.11f, 57.74f, 66.13f];
-        m_TickerSupport["CVNA"] = [8.86f, 21.71f, 29.6f, 37.2f, 45.33f, 54.53f, 76.46f, 89.23f, 108.68f, 125.49f, 139.21f, 154.69f, 174.45f, 192.93f, 207.56f, 221.52f, 233.99f, 245.49f, 256.94f, 266.66f, 277.98f, 289.66f, 300.84f, 316.54f, 331.57f, 345.18f, 359.71f, 374.79f, 397.29f];
-        m_TickerSupport["CLSK"] = [2.33f, 3.14f, 3.92f, 4.51f, 5.47f, 6.64f, 7.94f, 8.96f, 9.75f, 10.48f, 11.27f, 12.18f, 13.05f, 13.92f, 15.05f, 16.07f, 17.2f, 18.32f, 19.36f, 20.53f, 21.72f, 22.94f, 24.43f, 26.07f, 27.92f, 29.81f, 32.62f, 36.54f, 40.94f];
-        m_TickerSupport["CAG"] = [18.61f, 19.32f, 20.92f, 22.32f, 23.11f, 24.61f, 25.47f, 26.32f, 27.3f, 28.06f, 28.76f, 29.38f, 29.96f, 30.66f, 31.3f, 32.04f, 32.54f, 33.06f, 33.57f, 34.06f, 34.58f, 35.13f, 35.67f, 36.2f, 36.79f, 37.36f, 37.9f, 38.59f, 40.37f];
+        tickers = [
+            // "SEDG", "SPWR", "FSLR", // Solar
+            // "AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", // Big 6 Tech
+            "BABA"
+            // "PLTR", // Big Data
+            // "BABA", // E-commerce/China Tech
+            // "CSIQ", "ENPH", // Solar
+            // "MARA", "HUT", // Bitcoin Miners
+            // "BE", // Big 7 Alternative Energy
+            // "RUN" // Renewable Energy
+        ];
+        m_TickerSupport["AAPL"] = [115.19f, 128.17f, 142.92f, 156.17f, 169.88f, 186.34f, 203.14f, 217.7f, 228.7f, 245.13f];
+        m_TickerResistance["AAPL"] = [119.15f, 131.3f, 144.73f, 155.66f, 168.29f, 178.48f, 192.4f, 211.81f, 228.86f, 246.27f];
+        m_TickerSupport["INTC"] = [20.08f, 23.73f, 27.55f, 30.94f, 34.96f, 41.48f, 45.09f, 48.85f, 51.9f, 57.34f];
+        m_TickerResistance["INTC"] = [21.09f, 25.19f, 29.73f, 33.61f, 36.7f, 42.3f, 45.91f, 49.51f, 52.55f, 58.51f];
+        m_TickerSupport["PLTR"] = [8.48f, 15.89f, 23.76f, 36.68f, 67.02f, 83.26f, 111.03f, 132.53f, 154.02f, 175.73f];
+        m_TickerResistance["PLTR"] = [9.04f, 16.91f, 25.19f, 38.84f, 69.67f, 87.91f, 118.8f, 138.48f, 158.88f, 180.78f];
+        m_TickerSupport["HUT"] = [5.13f, 8.83f, 11.69f, 16.45f, 21.09f, 27.04f, 36.24f, 45.59f, 58.35f, 70.39f];
+        m_TickerResistance["HUT"] = [5.44f, 9.43f, 12.47f, 17.59f, 22.23f, 27.45f, 33.7f, 42.17f, 53.09f, 70.13f];
 
-        tickers = tickers.Distinct().ToList();
         var rangeAlgorithm = serviceProvider.GetService<RangeAlgorithmsRunner>();
         List<Task> tickersKeyLevelsLoader = [];
-        foreach (var ticker in m_TickerSupport.Keys)
+        foreach (var ticker in tickers)
         {
-            if (string.IsNullOrEmpty(ticker) || !m_TickerSupport.TryGetValue(ticker, out var keyLevels) || keyLevels.Length == 0) continue;
             var symbol = AddEquity(ticker, m_TestingPeriod, extendedMarketHours: true);
             AddData<FinanceData>(ticker, m_TestingPeriod);
-            m_TickerToMoney[ticker] = 0f; // Initialize realized P&L
-            m_TickerToPosition[ticker] = 0;
-            m_TickerToAvgPrice[ticker] = 0m;
+            _ema50[symbol.Symbol.Value] = EMA(symbol.Symbol, 50, m_TestingPeriod);
+            _ema200[symbol.Symbol.Value] = EMA(symbol.Symbol, 200, m_TestingPeriod);
+            // This makes Lean update the indicators when TradeBars arrive
+            RegisterIndicator(symbol.Symbol, _ema50[symbol.Symbol.Value], m_TestingPeriod);
+            RegisterIndicator(symbol.Symbol, _ema200[symbol.Symbol.Value], m_TestingPeriod);
         }
     }
 
@@ -97,106 +110,31 @@ public class AiAlgorithm : QCAlgorithm
     /// <param name="data">FinanceData for a single ticker</param>
     public void OnData(FinanceData data)
     {
-        FinanceData.CounterData++;
-        var ticker = data.Symbol.Value;
+        var symbol = data.Symbol.Value;
+        var financeCandleStick = data.CandleStick;
+        _ema50[symbol].Update(new TradeBar(data.Time, data.Symbol, (decimal)financeCandleStick.Open, (decimal)financeCandleStick.High, (decimal)financeCandleStick.Close, (decimal)financeCandleStick.Low, (decimal)financeCandleStick.Volume, TimeSpan.FromHours(1)));
+        _ema200[symbol].Update(new TradeBar(data.Time, data.Symbol, (decimal)financeCandleStick.Open, (decimal)financeCandleStick.High, (decimal)financeCandleStick.Close, (decimal)financeCandleStick.Low, (decimal)financeCandleStick.Volume, TimeSpan.FromHours(1)));
+        if (!_ema50[symbol].IsReady || !_ema200[symbol].IsReady) return;
 
-        if (!m_TickerSupport.TryGetValue(ticker, out var keyLevels)) return;
-        // if (!m_TickerResistance.TryGetValue(ticker, out var r)) return;
-        if (data.Time.Hour < 8) return;
-        int count = 0;
-        float[] pricesBuy = [data.CandleStick.High, data.CandleStick.Open, data.CandleStick.Close, data.CandleStick.Low];
-        // var k = keyLevels.ToList();
-        // k.AddRange(r);
-        // keyLevels = k.Distinct().ToArray();
-        var symbol = data.Symbol;
-        var holdingsq = Securities[symbol].Holdings.Quantity;
-        if (holdingsq == 0)
+        // Entry logic: Price above both EMAs and EMAs are aligned (50 > 200)
+        var holdings = Securities[data.Symbol].Holdings;
+        var avgPrice = holdings.AveragePrice;
+        var currentPrice = (decimal)data.CandleStick.Close;
+        if (data.CandleStick.Close > _ema50[symbol] && _ema50[symbol] > _ema200[symbol] && m_TickerSupport[symbol].Any(support => currentPrice <= (decimal)support * 1.001m && currentPrice >= (decimal)support * 0.999m))
         {
-            foreach (var price in pricesBuy)
+            if (holdings.Quantity == 0)
             {
-                if (price <= 0)
-                {
-                    continue;
-                }
-                foreach (var value in keyLevels)
-                {
-                    var valueDivision = price / value;
-                    if (valueDivision <= 1.015 && valueDivision >= 0.995)
-                    {
-                        var number = 3;
-                        var previousHistory = History<FinanceData>(data.Symbol, number, m_TestingPeriod);
-                        if (previousHistory is not null && previousHistory.Any() && previousHistory.Count() >= number)
-                        {
-
-                            var spyResult2 = previousHistory.Select(_ => _.CandleStick).ToList();
-                            var beforeLast = previousHistory.TakeLast(2).First().CandleStick;
-                            var body = Math.Abs(beforeLast.Close - beforeLast.Open);
-                            var lowerShadow = beforeLast.Close > beforeLast.Open ? beforeLast.Open - beforeLast.Low : beforeLast.Close - beforeLast.Low;
-                            var upperShadow = beforeLast.High - Math.Max(beforeLast.Close, beforeLast.Open);
-                            if (lowerShadow == 0 || upperShadow == 0)
-                                continue;
-                            // Hammer: small body at top, long lower shadow
-                            bool isHammer = lowerShadow >= 2 * body && upperShadow <= 0.1 * body;
-
-                            // Reverse Hammer: small body at bottom, long upper shadow
-                            bool isReverseHammer = upperShadow >= 2 * body && lowerShadow <= 0.1 * body;
-                            // This is confirmation
-                            var last = previousHistory.Last().CandleStick;
-                            body = Math.Abs(last.Close - last.Open);
-                            upperShadow = last.High - Math.Max(last.Close, last.Open);
-                            lowerShadow = Math.Min(last.Close, last.Open) - last.Low;
-
-                            bool noBottomingTail = lowerShadow <= 0.1 * body; // body is close to low
-                            bool noToppingTail = upperShadow <= 0.1 * body; // body is close to high
-                            var isBullish = last.Close > last.Open && noToppingTail;
-                            var isBearish = last.Close < last.Open && noBottomingTail;
-                            if (isReverseHammer && isBearish)
-                            {
-                                Short(data.Symbol, data);
-                                m_BuyKeyLevel[symbol.Value] = value;
-                                return;
-                            }
-                            if (isHammer && isBullish)
-                            {
-                                Buy(data.Symbol, data);
-
-                                m_BuyKeyLevel[symbol.Value] = value;
-
-                                return;
-                            }
-                        }
-                    }
-
-
-                }
+                Buy(data.Symbol, data);
             }
         }
-        float[] sellPrices = [data.CandleStick.Low, data.CandleStick.Open, data.CandleStick.Close, data.CandleStick.High];
-        foreach (var price in sellPrices)
+        // Exit logic: Price below either EMA or EMAs are misaligned
+        else if (
+                (currentPrice >= avgPrice * 1.03m))
         {
-            var holdings = Securities[data.Symbol].Holdings;
-            var avgPrice = holdings.AveragePrice;
-            var currentPrice = (decimal)price;
-
-            if (price <= 0)
-            {
-                continue;
-            }
 
             if (holdings.Quantity > 0)
             {
-                if (currentPrice >= avgPrice * 1.03m || currentPrice <= (decimal)(m_BuyKeyLevel[data.Symbol.Value] * 0.97f))
-                {
-                    Sell(data.Symbol);
-                    m_BuyKeyLevel.Remove(data.Symbol.Value);
-                }
-            }
-            else if (holdings.Quantity < 0)
-            {
-                if (currentPrice >= avgPrice * 1.03m || currentPrice <= (decimal)(m_BuyKeyLevel[data.Symbol.Value] * 0.97f))
-                {
-                    Sell(data.Symbol);
-                }
+                Sell(data.Symbol);
             }
         }
     }
@@ -209,7 +147,7 @@ public class AiAlgorithm : QCAlgorithm
     {
         Debug($"Trying to buy  {symbol.Value} at price {data.CandleStick.Close}");
         float p = 1f / m_TickerSupport.Count;
-        SetHoldings(symbol, p);
+        SetHoldings(symbol, 0.5);
     }
 
     /// <summary>
@@ -219,13 +157,6 @@ public class AiAlgorithm : QCAlgorithm
     public void Sell(Symbol symbol)
     {
         Liquidate(symbol);
-    }
-
-    public void Short(Symbol symbol, FinanceData data)
-    {
-        Debug($"Trying to short  {symbol.Value}");
-        float p = -1f / m_TickerSupport.Count;
-        SetHoldings(symbol, p);
     }
 
     /// <summary>
@@ -317,3 +248,4 @@ public class AiAlgorithm : QCAlgorithm
         }
     }
 }
+

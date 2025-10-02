@@ -102,9 +102,8 @@ public class QCTrader : ITrader
         // var shortTickers = TickersPullerParameters.BestSellers;
         List<string> tickers = [
             //Bitcoin miners
-            "HUT",
             // Cars
-            "AAPL", "SEDG", "PLTR"
+                "PLTR",  "GOOGL", "AES", "XPEV", "CVNA", "CLSK", "CAG"
         ];
 
         tickers = tickers.Distinct().ToList();

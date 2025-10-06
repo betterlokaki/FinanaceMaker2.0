@@ -146,7 +146,7 @@ public class QCTrader : ITrader
                 var isItHammer = secosecondToPreviousnd.IsItHammer() || prevoius.IsItHammer();
                 // var lastPrice = prices.Last().Close;
                 // var isNearSupport = supports.Any(support => Math.Abs((lastPrice - support) / support) < 0.015f);
-                if (cameBack is not null && closeToKeyLevels)
+                if (cameBack is not null && closeToKeyLevels && isItHammer)
                 {
                     relevantTickers.Add((ticker, last.Low));
                 }

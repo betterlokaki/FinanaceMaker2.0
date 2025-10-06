@@ -25,7 +25,7 @@ public record PricesPullerParameters
     {
         var today = DateTime.Now.AddMinutes(1);
 
-        return new(ticker, today.Subtract(TimeSpan.FromDays(1)), today, Period.Daily);
+        return new(ticker, today.Subtract(TimeSpan.FromDays(1)), today, period);
     }
     public static PricesPullerParameters Get3DaysParams(string ticker, Period period = Period.OneMinute)
     {

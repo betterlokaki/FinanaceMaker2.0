@@ -21,10 +21,16 @@ public record PricesPullerParameters
         Ticker = string.Empty;
     }
 
-    public static PricesPullerParameters GetTodayParams(string ticker)
+    public static PricesPullerParameters GetTodayParams(string ticker, Period period = Period.OneMinute)
     {
         var today = DateTime.Now.AddMinutes(1);
 
-        return new(ticker, today.Subtract(TimeSpan.FromDays(1)), today, Period.OneMinute);
+        return new(ticker, today.Subtract(TimeSpan.FromDays(1)), today, Period.Daily);
+    }
+    public static PricesPullerParameters Get3DaysParams(string ticker, Period period = Period.OneMinute)
+    {
+        var today = DateTime.Now.Date;
+
+        return new(ticker, today.Subtract(TimeSpan.FromDays(3)), today, Period.Daily);
     }
 }

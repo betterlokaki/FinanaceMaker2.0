@@ -14,6 +14,7 @@ using FinanceMaker.Publisher.Traders.Interfaces;
 using FinanceMaker.Pullers.PricesPullers;
 using FinanceMaker.Pullers.PricesPullers.Interfaces;
 using FinanceMaker.Pullers.TickerPullers;
+using FinanceMaker.Pullers.TickerPullers.Interfaces;
 using Microsoft.Build.Framework;
 using QuantConnect.Indicators;
 using QuantConnect.Securities;
@@ -29,7 +30,7 @@ namespace FinanceMaker.Publisher.Traders;
 public class QCTrader : ITrader
 {
     private readonly ConcurrentDictionary<string, (DateTime date, KeyLevelCandleSticks result)> _dailyRangeCache = new();
-    private readonly MainTickersPuller m_TickersPullers;
+    private readonly IParamtizedTickersPuller m_TickersPullers;
     private readonly RangeAlgorithmsRunner m_RangeAlgorithmsRunner;
     private readonly IPricesPuller m_PricesPuller;
     private readonly IBroker m_Broker;
@@ -37,7 +38,7 @@ public class QCTrader : ITrader
     private const int STARTED_MONEY = 29_500;
     private readonly Dictionary<string, float[]> m_TickerSupport = new();
     private readonly Dictionary<string, float[]> m_TickerResistance = new();
-    public QCTrader(MainTickersPuller pricesPuller,
+    public QCTrader(FourHourGapTickersPullers pricesPuller,
                     RangeAlgorithmsRunner rangeAlgorithmsRunner,
                     IPricesPuller mainPricesPuller,
                     IBroker broker)
@@ -101,11 +102,12 @@ public class QCTrader : ITrader
         // For now only long tickers, I will implement the function of short but I don't want to
         // scanTickersTwice
         // var shortTickers = TickersPullerParameters.BestSellers;
-        List<string> tickers = [
-            //Bitcoin miners
-            // Cars
-                "PLTR",  "GOOGL", "AES", "CLSK","BBAI", "XPEV", "CVNA", "CAG"
-        ];
+        // List<string> tickers = [
+        //     //Bitcoin miners
+        //     // Cars
+        //         "PLTR",  "GOOGL", "AES", "CLSK","BBAI", "XPEV", "CVNA", "CAG"
+        // ];
+        var tickers = await m_TickersPullers.ScanTickers(longTickers, cancellationToken);
 
         tickers = tickers.Distinct().ToList();
         // Now we've got the stocks, we should analyze them
@@ -140,10 +142,10 @@ public class QCTrader : ITrader
                 var cameBack = untilCrossedUnder.SkipWhile(candle => candle.Close >= lowOfDay).FirstOrDefault();
                 float[] keyLevels = [lowOfDay];
                 var closeToKeyLevels = keyLevels.Any(level => prices.Any(price => Math.Abs(price - level) <= 0.01));
-                var isItHammer = secosecondToPreviousnd.IsItHammer();
+                var isItHammer = secosecondToPreviousnd.IsItHammer() || prevoius.IsItHammer();
                 // var lastPrice = prices.Last().Close;
                 // var isNearSupport = supports.Any(support => Math.Abs((lastPrice - support) / support) < 0.015f);
-                if (cameBack is not null && closeToKeyLevels)
+                if (cameBack is not null && closeToKeyLevels && isItHammer)
                 {
                     relevantTickers.Add((ticker, last.Low));
                 }

@@ -100,6 +100,8 @@ public static class StaticContainer
         services.AddSingleton<IdeaBase<TechnicalIdeaInput, EntryExitOutputIdea>, OverNightBreakout>();
         services.AddSingleton<OverNightBreakout>();
         services.AddSingleton<FibonachiRunner>();
+        services.AddSingleton<FourHourGapTickersPullers>();
+
 
         ServiceProvider = services.BuildServiceProvider();
     }

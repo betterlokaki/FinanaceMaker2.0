@@ -1,6 +1,9 @@
 using System;
 using FinanceMaker.BackTester.QCHelpers;
 using FinanceMaker.Common.Models.Finance;
+using FinanceMaker.Common.Models.Pullers;
+using FinanceMaker.Pullers.TickerPullers;
+using Microsoft.Extensions.DependencyInjection;
 using QuantConnect;
 using QuantConnect.Algorithm;
 using QuantConnect.Orders;
@@ -23,9 +26,9 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
 
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-3);
+        var startDate = DateTime.Now.Date.AddDays(-7);
         var startDateForAlgo = new DateTime(2020, 1, 1);
-        var endDate = DateTime.Now.AddDays(-1);
+        var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
         SetCash(10_000); // Starting cash for the algorithm
         SetStartDate(startDate);
@@ -37,9 +40,9 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
         // Find more symbols here: http://quantconnect.com/data
         // Ticker from 3/11 "RGTI", "ASTS", "CRCL", "PL", "STLA", "SOUN" 
         // Ticker from 6/11 "QUBAT", "NB", "RUM", "OSCR", "RGTI", "QBTS", "RCAT", "QS", "ASPN"
-        m_Tickers = [
-          "RGTI", "ASTS", "CRCL", "PL", "STLA", "SOUN"
-        ];
+        var puller = StaticContainer.ServiceProvider.GetRequiredService<FourHourGapTickersPullers>();
+
+        m_Tickers = puller!.ScanTickers(TickersPullerParameters.BestBuyer, CancellationToken.None).Result.ToList();
         m_TestingPeriod = Resolution.Minute;
         foreach (var ticker in m_Tickers)
         {

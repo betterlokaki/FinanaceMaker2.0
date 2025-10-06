@@ -86,6 +86,20 @@ namespace FinanceMaker.Common.Models.Finance
             bool isHammer = lowerShadow >= 2 * body && upperShadow <= body;
             return isHammer;
         }
+
+        public bool HasFatBody(float thresholdRatio = 0.6f)
+        {
+            if (thresholdRatio < 0 || thresholdRatio > 1)
+            {
+                throw new ArgumentException($"{thresholdRatio} is not in range 0-1");
+            }
+            var body = Math.Abs(Close - Open);
+            var range = High - Low;
+
+            if (range == 0) return false;
+            var ratio = body / range;
+            return ratio >= thresholdRatio;
+        }
     }
 }
 

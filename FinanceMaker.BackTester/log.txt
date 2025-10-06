@@ -1,0 +1,19 @@
+2025-10-03T09:53:26.3242500Z TRACE:: Engine.Main(): LEAN ALGORITHMIC TRADING ENGINE v2.5.0.0 Mode: DEBUG (64bit) Host: shahars-mbp
+2025-10-03T09:53:26.3333540Z TRACE:: Engine.Main(): Started 12:53 PM
+2025-10-03T09:53:26.3353700Z TRACE:: Config.Get(): Configuration key not found. Key: lean-manager-type - Using default value: LocalLeanManager
+2025-10-03T09:53:26.3413170Z TRACE:: JobQueue.NextJob(): Selected FinanceMaker.BackTester.dll
+2025-10-03T09:53:26.3413540Z TRACE:: Config.Get(): Configuration key not found. Key: parameters - Using default value: 
+2025-10-03T09:53:26.3416600Z TRACE:: Config.GetValue(): scheduled-event-leaky-bucket-capacity - Using default value: 120
+2025-10-03T09:53:26.3416710Z TRACE:: Config.GetValue(): scheduled-event-leaky-bucket-time-interval-minutes - Using default value: 1440
+2025-10-03T09:53:26.3416780Z TRACE:: Config.GetValue(): scheduled-event-leaky-bucket-refill-amount - Using default value: 18
+2025-10-03T09:53:26.3417340Z TRACE:: Config.GetValue(): symbol-minute-limit - Using default value: 10000
+2025-10-03T09:53:26.3417420Z TRACE:: Config.GetValue(): symbol-second-limit - Using default value: 10000
+2025-10-03T09:53:26.3417480Z TRACE:: Config.GetValue(): symbol-tick-limit - Using default value: 10000
+2025-10-03T09:53:26.3417540Z TRACE:: Config.GetValue(): maximum-data-points-per-chart-series - Using default value: 1000000
+2025-10-03T09:53:26.3417600Z TRACE:: Config.GetValue(): maximum-chart-series - Using default value: 30
+2025-10-03T09:53:26.3420210Z TRACE:: Config.GetValue(): storage-limit - Using default value: 10737418240
+2025-10-03T09:53:26.3420270Z TRACE:: Config.GetValue(): storage-file-count - Using default value: 10000
+2025-10-03T09:53:26.3420330Z TRACE:: Config.GetValue(): storage-permissions - Using default value: 3
+2025-10-03T09:53:26.3420390Z TRACE:: Config.Get(): Configuration key not found. Key: algorithm-id - Using default value: EMAAlgorithm
+2025-10-03T09:53:26.3420570Z TRACE:: Config.Get(): Configuration key not found. Key: optimization-id - Using default value: 
+2025-10-03T09:53:26.3420630Z TRACE:: Config.Get(): Configuration key not found. Key: backtest-name - Using default value: local

@@ -1,8 +1,11 @@
 ﻿using System.Diagnostics;
 using FinanceMaker.BackTester.QCHelpers;
+using FinanceMaker.BackTester.Services.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using QuantConnect;
 using QuantConnect.Configuration;
 using QuantConnect.Lean.Engine;
+using QuantConnect.Orders;
 using QuantConnect.Util;
 
 namespace FinanceMaker.BackTester;
@@ -44,7 +47,7 @@ public class BackTester
     /// </summary>
     /// 
 
-    public static void Runner(Type algorithm)
+    public static async Task Runner(Type algorithm, ITradeVisualizer? tradeVisualizer = null, CancellationToken cancellationToken = default)
     {
         Config.Set("algorithm-type-name", algorithm.Name);
         Config.Set("data-folder", "../../../../FinanceMaker.BackTester/Data");
@@ -55,6 +58,7 @@ public class BackTester
         Thread.CurrentThread.Name = "Algorithm Analysis Thread";
 
         Initializer.Start();
+        var bruh = StaticContainer.ServiceProvider;
         var leanEngineSystemHandlers = Initializer.GetSystemHandlers();
 
         //-> Pull job from QuantConnect job queue, or, pull local build:
@@ -74,12 +78,85 @@ public class BackTester
 
         var dataFolder = Config.Get("data-folder");
         var customDataDirectory = Path.Combine(dataFolder, "Custom");
-        var aaa = engine.AlgorithmHandlers.Results;
+        var resultHandler = engine.AlgorithmHandlers.Results;
+        var p = engine.AlgorithmHandlers.Transactions.OrderEvents;
         var data = FinanceData.CounterDataSource;
+        var tradeVisualizer1 = StaticContainer.ServiceProvider.GetRequiredService<ITradeVisualizer>();
+
+        // Generate trade visualization if tradeVisualizer is provided
+        if (tradeVisualizer1 != null && resultHandler != null)
+        {
+            try
+            {
+                await GenerateTradeVisualization(p, algorithm.Name, tradeVisualizer1, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating trade visualization: {ex.Message}");
+            }
+        }
 
         if (Directory.Exists(customDataDirectory))
         {
             Directory.Delete(customDataDirectory, true);
+        }
+    }
+
+    private static async Task GenerateTradeVisualization(IEnumerable<OrderEvent> orderEvents, string algorithmName, ITradeVisualizer tradeVisualizer, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Get the symbols that were traded from OrderEvents
+            var symbols = orderEvents
+                .Select(oe => oe.Symbol.Value)
+                .Distinct()
+                .ToList();
+
+            Console.WriteLine($"Found {symbols.Count} symbols with trades: {string.Join(", ", symbols)}");
+
+            foreach (var symbol in symbols)
+            {
+                // Create visualization data
+                var visualizationData = await tradeVisualizer.CreateVisualizationDataAsync(
+                    orderEvents,
+                    symbol,
+                    algorithmName,
+                    FinanceData.StartDate,
+                    FinanceData.EndDate,
+                    cancellationToken);
+
+                if (visualizationData.Trades.Any())
+                {
+                    // Save chart to file
+                    var fileName = $"{symbol}_{algorithmName}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+                    var filePath = Path.Combine("Charts", fileName);
+
+                    // Ensure Charts directory exists
+                    Directory.CreateDirectory("Charts");
+
+                    var chartPlotter = new FinanceMaker.BackTester.Services.ChartPlotter();
+                    await chartPlotter.SaveChartAsync(visualizationData, filePath, cancellationToken);
+
+                    Console.WriteLine($"Trade chart saved: {filePath}");
+                    Console.WriteLine($"Trades found: {visualizationData.Trades.Count()}");
+
+                    // Print trade summary
+                    foreach (var trade in visualizationData.Trades)
+                    {
+                        Console.WriteLine($"  {trade.Direction} {trade.Quantity} shares at {trade.EntryPrice:C} -> {trade.ExitPrice:C} " +
+                                        $"P&L: {trade.ProfitLoss:C} ({trade.ProfitLossPercent:F2}%)");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"No trades found for symbol: {symbol}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in GenerateTradeVisualization: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
     }
 
@@ -90,39 +167,4 @@ public class BackTester
     // therefore we must check it on real life trading.
     // We don't need to connect the backtester to the worker, we just need to implement this logic, in the worker
     // I don't know ennglish that well its just using the Copilot
-}
-
-
-
-public class RealTimeTesting
-{
-    public static void Runner(Type algorithm)
-    {
-        Config.Set("algorithm-type-name", algorithm.Name);
-        Config.Set("data-folder", "../../../../FinanceMaker.BackTester/Data");
-        Config.Set("algorithm-language", "CSharp");
-        Config.Set("algorithm-location", "FinanceMaker.BackTester.dll");
-        Config.Set("live-mode", "true");
-
-        Thread.CurrentThread.Name = "RealTime Algorithm Thread";
-
-        Initializer.Start();
-        var leanEngineSystemHandlers = Initializer.GetSystemHandlers();
-        var job = leanEngineSystemHandlers.JobQueue.NextJob(out var assemblyPath);
-        var leanEngineAlgorithmHandlers = Initializer.GetAlgorithmHandlers();
-
-        var algorithmManager = new AlgorithmManager(true, job);
-
-        leanEngineSystemHandlers.LeanManager.Initialize(
-            leanEngineSystemHandlers,
-            leanEngineAlgorithmHandlers,
-            job,
-            algorithmManager
-        );
-
-        OS.Initialize();
-
-        var engine = new Engine(leanEngineSystemHandlers, leanEngineAlgorithmHandlers, true);
-        engine.Run(job, algorithmManager, assemblyPath, WorkerThread.Instance);
-    }
 }

@@ -74,6 +74,18 @@ namespace FinanceMaker.Common.Models.Finance
         {
             return new FinanceCandleStick(this);
         }
+
+        public bool IsItHammer()
+        {
+            var body = Math.Abs(Close - Open);
+            var lowerShadow = Open > Close ? Close - Low : Open - Low;
+            var upperShadow = High - Math.Max(Close, Open);
+
+            // Hammer criteria: small body, long lower shadow, little or no upper shadow
+            if (body == 0) return false; // Avoid doji
+            bool isHammer = lowerShadow >= 2 * body && upperShadow <= body;
+            return isHammer;
+        }
     }
 }
 

@@ -3,6 +3,8 @@ using FinanceMaker.Algorithms.News.Analyziers;
 using FinanceMaker.Algorithms.News.Analyziers.Interfaces;
 using FinanceMaker.Algorithms.Runners;
 using FinanceMaker.BackTester.QCAlggorithms;
+using FinanceMaker.BackTester.Services;
+using FinanceMaker.BackTester.Services.Interfaces;
 using FinanceMaker.Common;
 using FinanceMaker.Common.Models.Ideas.IdeaInputs;
 using FinanceMaker.Common.Models.Ideas.IdeaOutputs;
@@ -71,6 +73,10 @@ public static class StaticContainer
         services.AddSingleton<KeyLevelsRunner>();
         services.AddSingleton<EMARunner>();
         services.AddSingleton<BreakOutDetectionRunner>();
+
+        // Add charting services
+        services.AddSingleton<FinanceMaker.BackTester.Services.Interfaces.IChartPlotter, FinanceMaker.BackTester.Services.ChartPlotter>();
+        services.AddSingleton<FinanceMaker.BackTester.Services.Interfaces.ITradeVisualizer, FinanceMaker.BackTester.Services.TradeVisualizer>();
 
         services.AddSingleton<IEnumerable<IAlgorithmRunner<RangeAlgorithmInput>>>(
             sp =>

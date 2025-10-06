@@ -8,6 +8,7 @@ using FinanceMaker.Common.Models.Finance;
 using FinanceMaker.Common.Models.Finance.Enums;
 using FinanceMaker.Common.Models.Ideas.IdeaOutputs;
 using FinanceMaker.Common.Models.Pullers;
+using FinanceMaker.Common.Models.Pullers.YahooFinance;
 using FinanceMaker.Publisher.Orders.Trader.Interfaces;
 using FinanceMaker.Publisher.Traders.Interfaces;
 using FinanceMaker.Pullers.PricesPullers;
@@ -32,8 +33,8 @@ public class QCTrader : ITrader
     private readonly RangeAlgorithmsRunner m_RangeAlgorithmsRunner;
     private readonly IPricesPuller m_PricesPuller;
     private readonly IBroker m_Broker;
-    private const int NUMBER_OF_OPEN_TRADES = 3;
-    private const int STARTED_MONEY = 10_500;
+    private const int NUMBER_OF_OPEN_TRADES = 10;
+    private const int STARTED_MONEY = 29_500;
     private readonly Dictionary<string, float[]> m_TickerSupport = new();
     private readonly Dictionary<string, float[]> m_TickerResistance = new();
     public QCTrader(MainTickersPuller pricesPuller,
@@ -103,7 +104,7 @@ public class QCTrader : ITrader
         List<string> tickers = [
             //Bitcoin miners
             // Cars
-                "PLTR",  "GOOGL", "AES", "XPEV", "CVNA", "CLSK", "CAG"
+                "PLTR",  "GOOGL", "AES", "CLSK","BBAI", "XPEV", "CVNA", "CAG"
         ];
 
         tickers = tickers.Distinct().ToList();
@@ -112,14 +113,39 @@ public class QCTrader : ITrader
 
         await Parallel.ForEachAsync(tickers, async (ticker, ca) =>
         {
-            if (m_TickerSupport.TryGetValue(ticker, out var supports))
+            // if (m_TickerSupport.TryGetValue(ticker, out var supports))
             {
-                var prices = await m_PricesPuller.GetTickerPrices(PricesPullerParameters.GetTodayParams(ticker), ca);
-                var lastPrice = prices.Last().Close;
-                var isNearSupport = supports.Any(support => Math.Abs((lastPrice - support) / support) < 0.015f);
-                if (isNearSupport)
+                var datas = await m_PricesPuller.GetTickerPrices(PricesPullerParameters.GetTodayParams(ticker), ca);
+                var window = 60 * 4;
+                var last = datas.Last();
+                var list = datas.ToList(); // Convert to list to allow indexing
+                var prevoius = list[^2];
+                var secosecondToPreviousnd = list[^3];
+                var today = datas.Where(_ => _.Time.Date ==
+                                    DateTime.Today.Date)
+                                    .ToArray();
+                var fourHoursWindow = today.Take(window).ToArray();
+
+                if (fourHoursWindow.Length < window)
                 {
-                    relevantTickers.Add((ticker, prices.Last().Low));
+                    return;
+                }
+                float[] prices = [last.Open, last.Low, last.High, last.Close];
+
+                var restOfTheDay = today.Skip(window).ToList();
+                var highOfDay = fourHoursWindow.Max(c => c.High);
+                var lowOfDay = fourHoursWindow.Min(c => c.Low);
+                var untilCrossedUnder = restOfTheDay.SkipWhile(candle => candle.Close < lowOfDay)
+                                    .ToArray();
+                var cameBack = untilCrossedUnder.SkipWhile(candle => candle.Close >= lowOfDay).FirstOrDefault();
+                float[] keyLevels = [lowOfDay];
+                var closeToKeyLevels = keyLevels.Any(level => prices.Any(price => Math.Abs(price - level) <= 0.01));
+                var isItHammer = secosecondToPreviousnd.IsItHammer();
+                // var lastPrice = prices.Last().Close;
+                // var isNearSupport = supports.Any(support => Math.Abs((lastPrice - support) / support) < 0.015f);
+                if (cameBack is not null && closeToKeyLevels)
+                {
+                    relevantTickers.Add((ticker, last.Low));
                 }
             }
         });

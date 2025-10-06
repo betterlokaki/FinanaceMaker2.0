@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceMaker.BackTester", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceMaker.Brokers", "FinanceMaker.Brokers\FinanceMaker.Brokers.csproj", "{A1EEF100-5C78-429D-911E-DD79D992E902}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FinanceMaker.BackTester", "FinanceMaker.BackTester", "{C1030AD6-8D7F-4D0F-943C-6261ED773338}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,6 +74,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3BC607EB-69FD-4574-A473-3767A19CA3B8} = {C1030AD6-8D7F-4D0F-943C-6261ED773338}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {9584633F-07C4-4613-9998-6B89BD199E1F}

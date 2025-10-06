@@ -119,10 +119,7 @@ public class QCTrader : ITrader
             {
                 var datas = await m_PricesPuller.GetTickerPrices(PricesPullerParameters.GetTodayParams(ticker), ca);
                 var window = 60 * 4;
-                var last = datas.Last();
-                var list = datas.ToList(); // Convert to list to allow indexing
-                var prevoius = list[^2];
-                var secosecondToPreviousnd = list[^3];
+
                 var today = datas.Where(_ => _.Time.Date ==
                                     DateTime.Today.Date)
                                     .ToArray();
@@ -132,6 +129,10 @@ public class QCTrader : ITrader
                 {
                     return;
                 }
+                var last = datas.Last();
+                var list = datas.ToList(); // Convert to list to allow indexing
+                var prevoius = list[^2];
+                var secosecondToPreviousnd = list[^3];
                 float[] prices = [last.Open, last.Low, last.High, last.Close];
 
                 var restOfTheDay = today.Skip(window).ToList();

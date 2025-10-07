@@ -26,7 +26,7 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
 
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-7);
+        var startDate = DateTime.Now.Date.AddDays(-4);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
@@ -42,7 +42,8 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
         // Ticker from 6/11 "QUBAT", "NB", "RUM", "OSCR", "RGTI", "QBTS", "RCAT", "QS", "ASPN"
         var puller = StaticContainer.ServiceProvider.GetRequiredService<FourHourGapTickersPullers>();
 
-        m_Tickers = puller!.ScanTickers(TickersPullerParameters.BestBuyer, CancellationToken.None).Result.ToList();
+
+        m_Tickers = ["QUBAT", "NB", "RUM", "OSCR", "RGTI", "QBTS", "RCAT", "QS", "ASPN", "RGTI", "ASTS", "CRCL", "PL", "STLA", "SOUN"];
         m_TestingPeriod = Resolution.Minute;
         foreach (var ticker in m_Tickers)
         {
@@ -87,7 +88,7 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
 
         // var isItBulish = IsItBulishCandle(prevoius.CandleStick) || IsItBulishCandle(financeCandleStick);
         // var isItBerish = IsItBerishCandle(prevoius.CandleStick) || IsItBerishCandle(financeCandleStick);
-        if (holdingsq == 0 && cameBack is not null && closeToKeyLevels && isItHammer)
+        if (holdingsq == 0 && cameBack is not null && closeToKeyLevels)
         {
             if (cameBack.CandleStick.Close == data.CandleStick.Close)
             {

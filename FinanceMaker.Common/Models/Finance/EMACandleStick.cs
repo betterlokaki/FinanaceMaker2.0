@@ -15,7 +15,7 @@ public class EMACandleStick : FinanceCandleStick
 
     #endregion
 
-    public EMACandleStick(DateTime dateTime, float open, float close, float high, float low, int volume)
+    public EMACandleStick(DateTime dateTime, float open, float close, float high, float low, long volume)
     : this(new FinanceCandleStick(dateTime, open, close, high, low, volume), 0)
     {
     }

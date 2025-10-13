@@ -31,7 +31,7 @@ public class RangePlusAlgorithm : QCAlgorithm
     /// </summary>
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-7);
+        var startDate = DateTime.Now.Date.AddDays(-1);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
@@ -48,9 +48,7 @@ public class RangePlusAlgorithm : QCAlgorithm
         m_TestingPeriod = Resolution.Minute;
         m_ProblematicTickers = ["HUT", "ENPH"];
         // Define candidate tickers (Big 7, Intel, and other large-cap tech)
-        tickers = [
-            "PLTR","AAPL", "INTC", "SEDG"
-        ];
+        tickers = ["ONDS", "CLSK", "GLXY", "BTU", "NB", "PYPL", "IREN", "AMD", "TMC"];
         tickers = tickers.Distinct().ToList();
         var rangeAlgorithm = serviceProvider.GetService<RangeAlgorithmsRunner>();
         List<Task> tickersKeyLevelsLoader = [];

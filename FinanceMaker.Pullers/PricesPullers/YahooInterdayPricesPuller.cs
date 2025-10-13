@@ -97,6 +97,7 @@ public sealed class YahooInterdayPricesPuller : IPricesPuller
         for (int i = 0; i < timestamps.Length; i++)
         {
             var candleDate = DateTimeOffset.FromUnixTimeSeconds(timestamps[i]).DateTime;
+            candleDate = new DateTime(candleDate.Ticks, DateTimeKind.Utc);
             var open = indicators.open[i] ?? indicators.open[i - 1] ?? 0;
             var close = indicators.close[i] ?? indicators.close[i - 1] ?? 0;
             var low = indicators.low[i] ?? indicators.low[i - 1] ?? 0;
@@ -116,7 +117,7 @@ public sealed class YahooInterdayPricesPuller : IPricesPuller
             return new FinanceCandleStick(candle.Time, haOpen, haClose, haHigh, haLow, candle.Volume);
         }).ToArray();
 
-        return haCandles;
+        return candles;
     }
 
     private async Task<YahooResponse> PullDataFromYahoo(DateTime startDate,
@@ -126,12 +127,13 @@ public sealed class YahooInterdayPricesPuller : IPricesPuller
                                                         CancellationToken cancellationToken)
     {
         var client = m_RequestsService.CreateClient();
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Itay-Barel");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Itay-The-Best-Agent");
 
         //client.AddBrowserUserAgent();
-        var startTime = ((DateTimeOffset)startDate.ToUniversalTime()).ToUnixTimeSeconds();
-        var endTime = ((DateTimeOffset)endDate.ToUniversalTime()).ToUnixTimeSeconds();
-
+        var startTimeA = ((DateTimeOffset)startDate.ToUniversalTime());
+        var endTimeA = ((DateTimeOffset)endDate.ToUniversalTime());
+        var startTime = startTimeA.ToUnixTimeSeconds();
+        var endTime = endTimeA.ToUnixTimeSeconds();
 
         var url = string.Format(m_FinanceUrl, ticker, startTime, endTime, yahooPeriod);
         HttpResponseMessage? response;

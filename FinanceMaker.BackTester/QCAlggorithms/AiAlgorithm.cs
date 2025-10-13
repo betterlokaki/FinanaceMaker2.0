@@ -53,7 +53,7 @@ public class AiAlgorithm : QCAlgorithm
     // 20250926 14:05:53.658 TRACE:: Debug: Ticker: MSFT, Realized P&L: -₪1,409.35
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-7);
+        var startDate = DateTime.Now.Date.AddDays(-365);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
@@ -67,15 +67,15 @@ public class AiAlgorithm : QCAlgorithm
         var serviceProvider = StaticContainer.ServiceProvider;
         var mainTickersPuller = serviceProvider.GetRequiredService<MainTickersPuller>();
         List<string> tickers = [];
-        m_TestingPeriod = Resolution.Minute;
+        m_TestingPeriod = Resolution.Daily;
         // Define candidate tickers (Big 7, Intel, and other large-cap tech)
-        m_TickerSupport["PLTR"] = [7.82f, 10.22f, 13.61f, 16.19f, 18.71f, 21.74f, 24.05f, 26.34f, 29.2f, 32.24f, 36.81f, 43.04f, 58.18f, 66.13f, 73.71f, 81.37f, 89.84f, 98.05f, 109.13f, 118.52f, 126.03f, 133.06f, 140.01f, 146.4f, 153.52f, 159.84f, 169.57f, 177.89f, 185.23f];
-        m_TickerSupport["GOOGL"] = [77.38f, 87.05f, 90.82f, 95.15f, 98.77f, 102.49f, 106.42f, 111.41f, 114.79f, 118.29f, 121.89f, 126.56f, 132.0f, 136.89f, 142.07f, 147.74f, 154.76f, 161.03f, 165.57f, 170.59f, 176.1f, 182.77f, 189.0f, 195.02f, 201.65f, 209.18f, 234.35f, 243.29f, 252.32f];
-        m_TickerSupport["AES"] = [10.16f, 10.94f, 11.79f, 12.62f, 13.16f, 13.71f, 14.78f, 15.69f, 16.3f, 16.85f, 17.36f, 18.01f, 18.69f, 19.39f, 20.04f, 20.58f, 21.09f, 21.64f, 22.33f, 23.01f, 23.65f, 24.24f, 24.87f, 25.53f, 26.25f, 27.05f, 27.73f, 28.21f, 28.84f];
-        m_TickerSupport["XPEV"] = [7.28f, 8.38f, 9.54f, 10.19f, 10.89f, 12.46f, 14.22f, 15.8f, 17.33f, 18.55f, 19.86f, 21.11f, 22.84f, 24.7f, 26.97f, 28.93f, 30.83f, 32.93f, 35.3f, 37.37f, 39.55f, 41.52f, 43.65f, 45.73f, 47.83f, 50.39f, 54.11f, 57.74f, 66.13f];
-        m_TickerSupport["CVNA"] = [8.86f, 21.71f, 29.6f, 37.2f, 45.33f, 54.53f, 76.46f, 89.23f, 108.68f, 125.49f, 139.21f, 154.69f, 174.45f, 192.93f, 207.56f, 221.52f, 233.99f, 245.49f, 256.94f, 266.66f, 277.98f, 289.66f, 300.84f, 316.54f, 331.57f, 345.18f, 359.71f, 374.79f, 397.29f];
-        m_TickerSupport["CLSK"] = [2.33f, 3.14f, 3.92f, 4.51f, 5.47f, 6.64f, 7.94f, 8.96f, 9.75f, 10.48f, 11.27f, 12.18f, 13.05f, 13.92f, 15.05f, 16.07f, 17.2f, 18.32f, 19.36f, 20.53f, 21.72f, 22.94f, 24.43f, 26.07f, 27.92f, 29.81f, 32.62f, 36.54f, 40.94f];
-        m_TickerSupport["CAG"] = [18.61f, 19.32f, 20.92f, 22.32f, 23.11f, 24.61f, 25.47f, 26.32f, 27.3f, 28.06f, 28.76f, 29.38f, 29.96f, 30.66f, 31.3f, 32.04f, 32.54f, 33.06f, 33.57f, 34.06f, 34.58f, 35.13f, 35.67f, 36.2f, 36.79f, 37.36f, 37.9f, 38.59f, 40.37f];
+        m_TickerSupport["HUT"] = [4.434412494099215f, 5.335331609520974f, 6.000019860093851f, 9.393410857759672f, 11.651121227321992f, 26.129437050684174f, 31.55312228121452f, 35.24958253071404f];
+        m_TickerSupport["HIVE"] = [0.14948492709099126f, 0.20000000298022869f, 0.3644088172976707f, 0.40254388347286046f, 0.5836248495487397f, 1.3744543693706586f, 1.599404418987658f, 1.9631052638238313f, 2.39914070509313f, 3.0959712742303376f, 3.724082816725016f, 4.11751559826349f, 5.311349391165448f, 10.042835561644855f, 13.368793755902185f, 14.75790297586963f];
+        m_TickerSupport["WULF"] = [1.2725320532634588f, 1.4479223966705843f, 1.9103624012989713f, 2.2076914495576734f, 3.3930351995331636f, 4.6077063318555656f, 6.049619055567621f, 8.18118236675147f, 9.064913329095038f, 10.621493473816765f, 15.370066011062363f, 18.333269346346558f, 25.54161044948079f];
+        m_TickerSupport["NB"] = [1.792234237117211f, 2.4332740763014136f, 3.102342978004084f];
+        m_TickerSupport["UAMY"] = [0.2655707763378271f, 0.30081533709495273f, 0.36036342393614723f, 0.4183254088111043f, 0.4999256508088396f, 0.5871692344464614f, 0.6697941450696078f, 0.8981567923580487f, 1.1042203498637104f, 1.5498859034431187f, 1.8968665003756264f, 2.2274623761053447f];
+        m_TickerSupport["VRT"] = [10.149300802998855f, 13.588337403929009f, 18.57926320134095f, 21.14216105186785f, 26.19084713086044f, 38.90132797038187f, 88.15004649025757f, 110.41403063141699f, 125.78898482308762f];
+        m_TickerSupport["CLSK"] = [1.970763207617062f, 3.0188417096455273f, 4.176851995582706f, 6.143310939201714f, 7.634261917113984f, 9.331771753635874f, 10.51948635472803f, 13.858010777757194f, 16.15891374247574f, 23.729328946546623f, 28.378224756919245f, 34.5162189555963f];
 
         tickers = tickers.Distinct().ToList();
         var rangeAlgorithm = serviceProvider.GetService<RangeAlgorithmsRunner>();
@@ -123,48 +123,9 @@ public class AiAlgorithm : QCAlgorithm
                     var valueDivision = price / value;
                     if (valueDivision <= 1.015 && valueDivision >= 0.995)
                     {
-                        var number = 3;
-                        var previousHistory = History<FinanceData>(data.Symbol, number, m_TestingPeriod);
-                        if (previousHistory is not null && previousHistory.Any() && previousHistory.Count() >= number)
-                        {
-
-                            var spyResult2 = previousHistory.Select(_ => _.CandleStick).ToList();
-                            var beforeLast = previousHistory.TakeLast(2).First().CandleStick;
-                            var body = Math.Abs(beforeLast.Close - beforeLast.Open);
-                            var lowerShadow = beforeLast.Close > beforeLast.Open ? beforeLast.Open - beforeLast.Low : beforeLast.Close - beforeLast.Low;
-                            var upperShadow = beforeLast.High - Math.Max(beforeLast.Close, beforeLast.Open);
-                            if (lowerShadow == 0 || upperShadow == 0)
-                                continue;
-                            // Hammer: small body at top, long lower shadow
-                            bool isHammer = lowerShadow >= 2 * body && upperShadow <= 0.1 * body;
-
-                            // Reverse Hammer: small body at bottom, long upper shadow
-                            bool isReverseHammer = upperShadow >= 2 * body && lowerShadow <= 0.1 * body;
-                            // This is confirmation
-                            var last = previousHistory.Last().CandleStick;
-                            body = Math.Abs(last.Close - last.Open);
-                            upperShadow = last.High - Math.Max(last.Close, last.Open);
-                            lowerShadow = Math.Min(last.Close, last.Open) - last.Low;
-
-                            bool noBottomingTail = lowerShadow <= 0.1 * body; // body is close to low
-                            bool noToppingTail = upperShadow <= 0.1 * body; // body is close to high
-                            var isBullish = last.Close > last.Open && noToppingTail;
-                            var isBearish = last.Close < last.Open && noBottomingTail;
-                            if (isReverseHammer && isBearish)
-                            {
-                                Short(data.Symbol, data);
-                                m_BuyKeyLevel[symbol.Value] = value;
-                                return;
-                            }
-                            if (isHammer && isBullish)
-                            {
-                                Buy(data.Symbol, data);
-
-                                m_BuyKeyLevel[symbol.Value] = value;
-
-                                return;
-                            }
-                        }
+                        Buy(symbol, data);
+                        m_BuyKeyLevel[ticker] = value;
+                        return;
                     }
 
 
@@ -185,7 +146,13 @@ public class AiAlgorithm : QCAlgorithm
 
             if (holdings.Quantity > 0)
             {
-                if (currentPrice >= avgPrice * 1.03m || currentPrice <= (decimal)(m_BuyKeyLevel[data.Symbol.Value] * 0.97f))
+                var bruh = m_TickerSupport[ticker].IndexOf(m_BuyKeyLevel[ticker]) + 1;
+                if (bruh >= m_TickerSupport[ticker].Length)
+                {
+                    return;
+                }
+                var nextLevel = m_TickerSupport[ticker][bruh];
+                if (currentPrice >= (decimal)nextLevel)
                 {
                     Sell(data.Symbol);
                     m_BuyKeyLevel.Remove(data.Symbol.Value);
@@ -193,7 +160,7 @@ public class AiAlgorithm : QCAlgorithm
             }
             else if (holdings.Quantity < 0)
             {
-                if (currentPrice >= avgPrice * 1.03m || currentPrice <= (decimal)(m_BuyKeyLevel[data.Symbol.Value] * 0.97f))
+                if (currentPrice >= avgPrice * 1.06m || currentPrice <= (decimal)(m_BuyKeyLevel[data.Symbol.Value] * 0.96f))
                 {
                     Sell(data.Symbol);
                 }
@@ -208,7 +175,7 @@ public class AiAlgorithm : QCAlgorithm
     public void Buy(Symbol symbol, FinanceData data)
     {
         Debug($"Trying to buy  {symbol.Value} at price {data.CandleStick.Close}");
-        float p = 1f / m_TickerSupport.Count;
+        float p = MathF.Max(1f / m_TickerSupport.Count, 0.5f);
         SetHoldings(symbol, p);
     }
 

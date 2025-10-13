@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using Accord.Math;
 using FinanceMaker.Algorithms;
 using FinanceMaker.Common;
 using FinanceMaker.Common.Extensions;
@@ -107,6 +108,7 @@ public class QCTrader : ITrader
         //     // Cars
         //         "PLTR",  "GOOGL", "AES", "CLSK","BBAI", "XPEV", "CVNA", "CAG"
         // ];
+
         var tickers = await m_TickersPullers.ScanTickers(longTickers, cancellationToken);
 
         tickers = tickers.Distinct().ToList();
@@ -124,8 +126,13 @@ public class QCTrader : ITrader
                                     DateTime.Today.Date)
                                     .ToArray();
                 var fourHoursWindow = today.Take(window).ToArray();
+                FinanceCandleStick? lastCandle = null;
+                if (today.Length > 0)
+                {
+                    lastCandle = today!.FirstOrDefault(p => p.Time >= today[0].Time.AddMinutes(window));
 
-                if (fourHoursWindow.Length < window)
+                }
+                if (fourHoursWindow.Length < window || lastCandle is null)
                 {
                     return;
                 }
@@ -134,8 +141,8 @@ public class QCTrader : ITrader
                 var prevoius = list[^2];
                 var secosecondToPreviousnd = list[^3];
                 float[] prices = [last.Open, last.Low, last.High, last.Close];
-
-                var restOfTheDay = today.Skip(window).ToList();
+                var actualWindow = today.IndexOf(lastCandle);
+                var restOfTheDay = today.Skip(actualWindow).ToList();
                 var highOfDay = fourHoursWindow.Max(c => c.High);
                 var lowOfDay = fourHoursWindow.Min(c => c.Low);
                 var untilCrossedUnder = restOfTheDay.SkipWhile(candle => candle.Close < lowOfDay)

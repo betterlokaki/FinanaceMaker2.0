@@ -2,10 +2,12 @@ using System;
 using FinanceMaker.BackTester.QCHelpers;
 using FinanceMaker.Common.Models.Finance;
 using FinanceMaker.Common.Models.Pullers;
+using FinanceMaker.Publisher.Orders.Trades;
 using FinanceMaker.Pullers.TickerPullers;
 using Microsoft.Extensions.DependencyInjection;
 using QuantConnect;
 using QuantConnect.Algorithm;
+using QuantConnect.Data.Market;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
 using YahooFinanceApi;
@@ -21,64 +23,112 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
     private List<string> m_Tickers = new();
     private Dictionary<string, float> m_TickerToMoney = new();
     private Resolution m_TestingPeriod;
+    private Dictionary<string, FinanceData> m_FourHourCandleOfTheDay = new();
+
     // Track open position and average price per ticker for P&L calculation
 
 
     public override void Initialize()
     {
-        var startDate = DateTime.Now.Date.AddDays(-4);
+        var endDate = DateTime.Now.ToUniversalTime().Date.AddDays(0);
+        var startDate = endDate.AddDays(-2);
         var startDateForAlgo = new DateTime(2020, 1, 1);
-        var endDate = DateTime.Now.AddDays(0);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
         SetCash(10_000); // Starting cash for the algorithm
         SetStartDate(startDate);
         SetEndDate(endDate);
-        SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(2.5m))); // $1 per trade
+        SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(0))); // $1 per trade
         FinanceData.StartDate = startDate;
         FinanceData.EndDate = endDate;      // Set Strategy Cash
 
         // Find more symbols here: http://quantconnect.com/data
-        // Ticker from 3/11 "RGTI", "ASTS", "CRCL", "PL", "STLA", "SOUN" 
-        // Ticker from 6/11 "QUBAT", "NB", "RUM", "OSCR", "RGTI", "QBTS", "RCAT", "QS", "ASPN"
+        // Ticker from 3/10 "RGTI", "ASTS", "CRCL", "PL", "STLA", "SOUN" 
+        // Ticker from 6/10 "QUBAT", "NB", "RUM", "OSCR", "RGTI", "QBTS", "RCAT", "QS", "ASPN"
+        // Ticker from 7/10 "ONDS", "CLSK", "GLXY", "BTU", "NB", "PYPL", "IREN", "AMD", "TMC"
+        // Ticker from 8/10 "FIG", "IREN", "JHX", "TMC", "PYPL", "POET", "RGTI", "SOFI"
+        // Tciker from 10/10 "HUT", "HIVE", "WULF", "NB", "UAMY"
         var puller = StaticContainer.ServiceProvider.GetRequiredService<FourHourGapTickersPullers>();
 
 
-        m_Tickers = ["QUBAT", "NB", "RUM", "OSCR", "RGTI", "QBTS", "RCAT", "QS", "ASPN", "RGTI", "ASTS", "CRCL", "PL", "STLA", "SOUN"];
+        m_Tickers = [.. puller!.ScanTickers(TickersPullerParameters.BestBuyer, CancellationToken.None).Result];
+        m_Tickers = ["HUT", "HIVE", "WULF", "NB", "UAMY", "VRT", "CLSK"];
         m_TestingPeriod = Resolution.Minute;
+        SetTimeZone(TimeZones.NewYork);
+        m_Tickers = m_Tickers.Distinct().ToList();
+        Debug($"Tickers count: {m_Tickers.Count}");
         foreach (var ticker in m_Tickers)
         {
-            var equity = AddEquity(ticker, m_TestingPeriod);
-            AddData<FinanceData>(ticker, m_TestingPeriod);
+            var equity = AddEquity(ticker, m_TestingPeriod, extendedMarketHours: true);
+            AddData<FinanceData>(equity.Symbol, m_TestingPeriod);
             m_TickerToMoney[ticker] = 0f; // Initialize realized P&L
             m_TickerToPosition[ticker] = 0;
             m_TickerToAvgPrice[ticker] = 0m;
         }
     }
+    public void OnFourHoursCandle(TradeBar bar)
+    {
+        m_FourHourCandleOfTheDay[bar.Symbol.Value] = m_FourHourCandleOfTheDay[bar.Symbol.Value] = new FinanceData
+        {
+            Symbol = bar.Symbol,
+            CandleStick = new EMACandleStick
+            (
+                bar.Time,
+                (float)bar.Open,
+               (float)bar.Close,
+               (float)bar.High,
+               (float)bar.Low, (long)bar.Volume)
 
+
+        };
+    }
+    private void CloseLogic(FinanceData data)
+    {
+        float[] prices = [data.CandleStick.Open, data.CandleStick.Low, data.CandleStick.High, data.CandleStick.Close];
+        var holdings = Securities[data.Symbol].Holdings;
+        var avgPrice = holdings.AveragePrice;
+        if (holdings.Quantity == 0) return;
+        foreach (var price in prices)
+        {
+            decimal f = (decimal)price;
+            if (f >= avgPrice * 1.02m || f <= avgPrice * 0.985m)
+            {
+                Sell(data.Symbol);
+            }
+        }
+
+    }
     public void OnData(FinanceData data)
     {
-        // if (!(data.Time.Hour > 13 || (data.Time.Hour == 13 && data.Time.Minute > 30))) return;
         var symbol = data.Symbol;
+        CloseLogic(data);
         if (!m_Tickers.Contains(symbol.Value)) return;
-        var todayCandles = History<FinanceData>(symbol, 1000, m_TestingPeriod)
-                         .Where(c => c.Time.Date == Time.Date)
+        var numOfStartCandles = 60 * 4; // 4 hours of 1 minute candles
+        var timeSpan = new TimeSpan(8, 0, 0) + TimeSpan.FromMinutes(numOfStartCandles);
+        var todayCandles = History<FinanceData>(symbol, 1440, m_TestingPeriod).ToArray();
+        todayCandles = todayCandles.Where(c => c.Time.Date == Time.Date)
                          .OrderBy(c => c.Time)
                          .ToArray();
-        var numOfStartCandles = 60 * 4; // 4 hours of 1 minute candles
+
         var startOfDay = todayCandles.Take(numOfStartCandles).ToList();
-        if (startOfDay.Count < numOfStartCandles) return;
+        if (startOfDay.Count < numOfStartCandles)
+        {
+            if (data.Time.TimeOfDay < timeSpan) return;
+            startOfDay = todayCandles.TakeWhile(c => c.Time.TimeOfDay < timeSpan).ToList();
+        }
         var restOfTheDay = todayCandles.Skip(numOfStartCandles).ToList();
         var highOfDay = startOfDay.Max(c => c.CandleStick.High);
-        var lowOfDay = startOfDay.Min(c => c.CandleStick.Low);
+        var lowOfDay = startOfDay.Where(c => c.CandleStick.Low > 0).Min(c => c.CandleStick.Low);
         var holdingsq = Securities[symbol].Holdings.Quantity;
         float[] prices = [data.CandleStick.Open, data.CandleStick.Low, data.CandleStick.High, data.CandleStick.Close];
         // This checks reverseall in the order
         var untilCrossedUnder = restOfTheDay.SkipWhile(candle => candle.CandleStick.Close < lowOfDay)
                                             .ToArray();
+
+        if (untilCrossedUnder.Length == 0) return;
         var cameBack = untilCrossedUnder.SkipWhile(candle => candle.CandleStick.Close >= lowOfDay).FirstOrDefault();
 
         float[] keyLevels = [lowOfDay];
-        var closeToKeyLevels = keyLevels.Any(level => prices.Any(price => Math.Abs(price - level) <= 0.01));
+        var closeToKeyLevels = keyLevels.Any(level => prices.Any(price => Math.Abs(price - level) <= 0.02));
         var history = History<FinanceData>(data.Symbol, 2, m_TestingPeriod);
         if (history.Count() < 2) return;
         var secondToPrevious = history.First();
@@ -88,29 +138,12 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
 
         // var isItBulish = IsItBulishCandle(prevoius.CandleStick) || IsItBulishCandle(financeCandleStick);
         // var isItBerish = IsItBerishCandle(prevoius.CandleStick) || IsItBerishCandle(financeCandleStick);
-        if (holdingsq == 0 && cameBack is not null && closeToKeyLevels)
+        if (holdingsq == 0 && cameBack is not null)
         {
-            if (cameBack.CandleStick.Close == data.CandleStick.Close)
-            {
-                Buy(symbol, data);
-                return;
-            }
-        }
-        else
-        {
-            var holdings = Securities[data.Symbol].Holdings;
-            var avgPrice = holdings.AveragePrice;
-            if (holdings.Quantity > 0)
-            {
-                foreach (var price in prices)
-                {
-                    decimal f = (decimal)price;
-                    if (f >= avgPrice * 1.08m || f <= avgPrice * 0.955m)
-                    {
-                        Sell(data.Symbol);
-                    }
-                }
-            }
+
+            Buy(symbol, data);
+            return;
+
         }
     }
     private bool IsItHammer(FinanceCandleStick candle)
@@ -132,7 +165,7 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
     {
         Debug($"Trying to buy  {symbol.Value} at price {data.CandleStick.Close}");
         float p = 1f / m_Tickers.Count;
-        SetHoldings(symbol, 0.5);
+        SetHoldings(symbol, p);
     }
 
     /// <summary>

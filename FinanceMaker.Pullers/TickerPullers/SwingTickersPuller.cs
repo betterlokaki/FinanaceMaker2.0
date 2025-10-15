@@ -1,20 +1,22 @@
 using System;
 using System.Collections.Concurrent;
-using System.CommandLine.Parsing;
 using FinanceMaker.Common;
-using FinanceMaker.Common.Extensions;
 using FinanceMaker.Common.Models.Pullers;
 using FinanceMaker.Common.Models.Pullers.Enums;
+using FinanceMaker.Pullers.NewsPullers.Interfaces;
 using FinanceMaker.Pullers.PricesPullers.Interfaces;
+using FinanceMaker.Pullers.TickerPullers.Interfaces;
 
 namespace FinanceMaker.Pullers.TickerPullers;
 
-public class FourHourGapTickersPullers : FinvizTickersPuller
+public class SwingTickersPuller : FinvizTickersPuller
 {
     private readonly IPricesPuller m_Puller;
-    public FourHourGapTickersPullers(IHttpClientFactory requestService, IPricesPuller pricesPuller) : base(requestService)
+    private readonly INewsPuller m_NewsPuller;
+    public SwingTickersPuller(IHttpClientFactory requestService, IPricesPuller pricesPuller, INewsPuller newsPuller) : base(requestService)
     {
         m_Puller = pricesPuller;
+        m_NewsPuller = newsPuller;
     }
 
     public override async Task<IEnumerable<string>> ScanTickers(TickersPullerParameters scannerParams, CancellationToken cancellationToken)
@@ -25,13 +27,24 @@ public class FourHourGapTickersPullers : FinvizTickersPuller
         var relevantTickers = new ConcurrentBag<string>();
         await Parallel.ForEachAsync(tickers, cancellationToken, async (ticker, token) =>
         {
-            var tickerPrices = await m_Puller.GetTickerPrices(PricesPullerParameters.Get3DaysParams(ticker, Period.Daily),
-                                                              token);
+            var tickerPrices = (await m_Puller.GetTickerPrices(PricesPullerParameters.Get3DaysParams(ticker, Period.Daily),
+                                                              token)).ToArray();
+            var newsParams = new NewsPullerParameters(ticker, DateTime.Now.AddDays(-3), DateTime.Now);
+            var news = await m_NewsPuller.PullNews(newsParams, token);
+            if (!news.Any()) return;
             var lastPrice = tickerPrices.LastOrDefault();
-
+            if (tickerPrices.Length < 2)
+            {
+                if (lastPrice is null) return;
+                if (lastPrice.Open >= lastPrice.Close) return;
+                relevantTickers.Add(ticker);
+                return;
+            }
+            var secondToLastPrice = tickerPrices[^2];
             if (lastPrice is null) return;
+            if (lastPrice.Open >= lastPrice.Close &&
+                 secondToLastPrice.Open >= secondToLastPrice.Close) return;
 
-            if (lastPrice.Open >= lastPrice.Close) return;
             relevantTickers.Add(ticker);
         });
         return [.. relevantTickers];

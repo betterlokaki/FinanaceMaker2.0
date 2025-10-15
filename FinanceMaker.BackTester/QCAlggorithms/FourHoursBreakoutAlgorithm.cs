@@ -24,6 +24,7 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
     private Dictionary<string, float> m_TickerToMoney = new();
     private Resolution m_TestingPeriod;
     private Dictionary<string, FinanceData> m_FourHourCandleOfTheDay = new();
+    private List<string> m_NeverTradeThisTicker = new();
 
     // Track open position and average price per ticker for P&L calculation
 
@@ -31,7 +32,7 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
     public override void Initialize()
     {
         var endDate = DateTime.Now.ToUniversalTime().Date.AddDays(0);
-        var startDate = endDate.AddDays(-2);
+        var startDate = endDate.AddDays(-11);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
         SetCash(10_000); // Starting cash for the algorithm
@@ -47,11 +48,12 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
         // Ticker from 7/10 "ONDS", "CLSK", "GLXY", "BTU", "NB", "PYPL", "IREN", "AMD", "TMC"
         // Ticker from 8/10 "FIG", "IREN", "JHX", "TMC", "PYPL", "POET", "RGTI", "SOFI"
         // Tciker from 10/10 "HUT", "HIVE", "WULF", "NB", "UAMY"
+        // Ticker from 14/10 "ABAT", "WMT", "NVTS", "UAMY"
         var puller = StaticContainer.ServiceProvider.GetRequiredService<FourHourGapTickersPullers>();
 
 
         m_Tickers = [.. puller!.ScanTickers(TickersPullerParameters.BestBuyer, CancellationToken.None).Result];
-        m_Tickers = ["HUT", "HIVE", "WULF", "NB", "UAMY", "VRT", "CLSK"];
+        m_Tickers = ["RGTI", "ASTS", "CRCL", "PL", "STLA", "SOUN"];
         m_TestingPeriod = Resolution.Minute;
         SetTimeZone(TimeZones.NewYork);
         m_Tickers = m_Tickers.Distinct().ToList();
@@ -90,9 +92,14 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
         foreach (var price in prices)
         {
             decimal f = (decimal)price;
-            if (f >= avgPrice * 1.02m || f <= avgPrice * 0.985m)
+            if (f >= avgPrice * 1.6m)
             {
                 Sell(data.Symbol);
+            }
+            else if (f <= avgPrice * 0.97m)
+            {
+                Sell(data.Symbol);
+                m_NeverTradeThisTicker.Add(data.Symbol.Value);
             }
         }
 
@@ -138,7 +145,8 @@ public sealed class FourHoursBreakoutAlgorithm : QCAlgorithm
 
         // var isItBulish = IsItBulishCandle(prevoius.CandleStick) || IsItBulishCandle(financeCandleStick);
         // var isItBerish = IsItBerishCandle(prevoius.CandleStick) || IsItBerishCandle(financeCandleStick);
-        if (holdingsq == 0 && cameBack is not null)
+        if (holdingsq == 0 &&
+            !m_NeverTradeThisTicker.Contains(symbol.Value) && cameBack is not null && closeToKeyLevels && isItHammer)
         {
 
             Buy(symbol, data);

@@ -117,7 +117,7 @@ public sealed class YahooInterdayPricesPuller : IPricesPuller
             return new FinanceCandleStick(candle.Time, haOpen, haClose, haHigh, haLow, candle.Volume);
         }).ToArray();
 
-        return candles;
+        return haCandles;
     }
 
     private async Task<YahooResponse> PullDataFromYahoo(DateTime startDate,

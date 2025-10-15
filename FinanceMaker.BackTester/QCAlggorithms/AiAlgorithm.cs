@@ -60,14 +60,14 @@ public class AiAlgorithm : QCAlgorithm
         SetCash(10_000); // Starting cash for the algorithm
         SetStartDate(startDate);
         SetEndDate(endDate);
-        SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(0))); // $1 per trade
+        SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(2.5m))); // $1 per trade
         FinanceData.StartDate = startDate;
         FinanceData.EndDate = endDate;
 
         var serviceProvider = StaticContainer.ServiceProvider;
         var mainTickersPuller = serviceProvider.GetRequiredService<MainTickersPuller>();
         List<string> tickers = [];
-        m_TestingPeriod = Resolution.Daily;
+        m_TestingPeriod = Resolution.Hour;
         // Define candidate tickers (Big 7, Intel, and other large-cap tech)
         m_TickerSupport["HUT"] = [4.434412494099215f, 5.335331609520974f, 6.000019860093851f, 9.393410857759672f, 11.651121227321992f, 26.129437050684174f, 31.55312228121452f, 35.24958253071404f];
         m_TickerSupport["HIVE"] = [0.14948492709099126f, 0.20000000298022869f, 0.3644088172976707f, 0.40254388347286046f, 0.5836248495487397f, 1.3744543693706586f, 1.599404418987658f, 1.9631052638238313f, 2.39914070509313f, 3.0959712742303376f, 3.724082816725016f, 4.11751559826349f, 5.311349391165448f, 10.042835561644855f, 13.368793755902185f, 14.75790297586963f];
@@ -146,13 +146,21 @@ public class AiAlgorithm : QCAlgorithm
 
             if (holdings.Quantity > 0)
             {
-                var bruh = m_TickerSupport[ticker].IndexOf(m_BuyKeyLevel[ticker]) + 1;
-                if (bruh >= m_TickerSupport[ticker].Length)
+                var nextLevelIndex = m_TickerSupport[ticker].IndexOf(m_BuyKeyLevel[ticker]) + 1;
+                var previousLevelIndex = nextLevelIndex - 1;
+                if (nextLevelIndex >= m_TickerSupport[ticker].Length)
                 {
+                    if (currentPrice >= avgPrice * 1.06m)
+                    {
+                        Sell(data.Symbol);
+                        m_BuyKeyLevel.Remove(data.Symbol.Value);
+                    }
+
                     return;
                 }
-                var nextLevel = m_TickerSupport[ticker][bruh];
-                if (currentPrice >= (decimal)nextLevel)
+                var nextLevel = m_TickerSupport[ticker][nextLevelIndex];
+                var previousLevel = m_TickerSupport[ticker][previousLevelIndex];
+                if (currentPrice >= (decimal)nextLevel || currentPrice <= (decimal)(m_TickerSupport[ticker][previousLevelIndex] * 0.93f))
                 {
                     Sell(data.Symbol);
                     m_BuyKeyLevel.Remove(data.Symbol.Value);
@@ -175,7 +183,7 @@ public class AiAlgorithm : QCAlgorithm
     public void Buy(Symbol symbol, FinanceData data)
     {
         Debug($"Trying to buy  {symbol.Value} at price {data.CandleStick.Close}");
-        float p = MathF.Max(1f / m_TickerSupport.Count, 0.5f);
+        float p = MathF.Max(1f / m_TickerSupport.Count, 0.08f);
         SetHoldings(symbol, p);
     }
 

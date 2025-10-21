@@ -29,7 +29,7 @@ public class SwingTickersPuller : FinvizTickersPuller
         {
             var tickerPrices = (await m_Puller.GetTickerPrices(PricesPullerParameters.Get3DaysParams(ticker, Period.Daily),
                                                               token)).ToArray();
-            var newsParams = new NewsPullerParameters(ticker, DateTime.Now.AddDays(-3), DateTime.Now);
+            var newsParams = new NewsPullerParameters(ticker, DateTime.Now.AddDays(-1), DateTime.Now);
             var news = await m_NewsPuller.PullNews(newsParams, token);
             if (!news.Any()) return;
             var lastPrice = tickerPrices.LastOrDefault();

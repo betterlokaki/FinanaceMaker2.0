@@ -20,7 +20,8 @@ public class FourHourGapTickersPullers : FinvizTickersPuller
     public override async Task<IEnumerable<string>> ScanTickers(TickersPullerParameters scannerParams, CancellationToken cancellationToken)
     {
         // var url = "https://finviz.com/screener.ashx?v=111&f=sh_avgvol_o2000,sh_curvol_o2000,sh_float_o50,sh_price_o7,ta_gap_u2&ft=4&o=-change";
-        var url = "https://finviz.com/screener.ashx?v=111&f=sh_avgvol_o2000,sh_curvol_o2000,sh_float_o50,sh_price_o7,sh_relvol_o2,ta_gap_u2&ft=4&o=-change";
+        // var url = "https://finviz.com/screener.ashx?v=111&f=sh_avgvol_o2000,sh_curvol_o2000,sh_float_o50,sh_price_o7,sh_relvol_o2,ta_gap_u2&ft=4&o=-change";
+        var url = "https://finviz.com/screener.ashx?v=111&f=sh_curvol_o2000%2Csh_price_5to30%2Csh_relvol_o3%2Cta_change_u4&ft=4";
         var tickers = await GetTickers(url, cancellationToken);
         var relevantTickers = new ConcurrentBag<string>();
         await Parallel.ForEachAsync(tickers, cancellationToken, async (ticker, token) =>

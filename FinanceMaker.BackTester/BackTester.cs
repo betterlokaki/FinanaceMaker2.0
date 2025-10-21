@@ -88,7 +88,7 @@ public class BackTester
         {
             try
             {
-                // await GenerateTradeVisualization(p, algorithm.Name, tradeVisualizer1, cancellationToken);
+                await GenerateTradeVisualization(p, algorithm.Name, tradeVisualizer1, cancellationToken);
             }
             catch (Exception ex)
             {

@@ -1,7 +1,14 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using FinanceMaker.BackTester.Services.Interfaces;
 using FinanceMaker.Common.Models.Finance;
 using FinanceMaker.Common.Models.Trading;
-using ScottPlot;
 
 namespace FinanceMaker.BackTester.Services
 {
@@ -12,121 +19,110 @@ namespace FinanceMaker.BackTester.Services
         {
             return await Task.Run(() =>
             {
-                var plot = new Plot();
-
-                // Configure the plot
-                plot.Title($"{visualizationData.Symbol} - {visualizationData.AlgorithmName}");
-                plot.XLabel("Time");
-                plot.YLabel("Price");
-
-                // Convert price data to arrays for plotting
-                var priceData = visualizationData.PriceData.ToArray();
+                var priceData = visualizationData.PriceData?.ToArray() ?? Array.Empty<FinanceCandleStick>();
                 if (priceData.Length == 0)
-                {
-                    return "No price data available";
-                }
-
-                var times = priceData.Select(p => p.Time.ToOADate()).ToArray();
-                var closes = priceData.Select(p => (double)p.Close).ToArray();
-
-                // Add price line chart
-                plot.Add.Scatter(times, closes, Colors.Blue);
-
-                // Add trade markers
-                foreach (var trade in visualizationData.Trades)
-                {
-                    // Entry marker
-                    var entryTime = trade.EntryTime.ToOADate();
-                    var entryMarker = plot.Add.Marker(entryTime, (double)trade.EntryPrice);
-                    entryMarker.Color = trade.Direction == TradeDirection.Long ? Colors.Green : Colors.Red;
-                    entryMarker.Size = 15;
-                    entryMarker.LegendText = $"Entry: {trade.EntryPrice:C}";
-
-                    // Exit marker
-                    var exitTime = trade.ExitTime.ToOADate();
-                    var exitMarker = plot.Add.Marker(exitTime, (double)trade.ExitPrice);
-                    exitMarker.Color = trade.Direction == TradeDirection.Long ? Colors.DarkGreen : Colors.DarkRed;
-                    exitMarker.Size = 15;
-                    exitMarker.LegendText = $"Exit: {trade.ExitPrice:C}";
-
-                    // Add line connecting entry and exit
-                    var tradeLine = plot.Add.Line(entryTime, (double)trade.EntryPrice, exitTime, (double)trade.ExitPrice);
-                    tradeLine.Color = trade.ProfitLoss >= 0 ? Colors.Green : Colors.Red;
-                    tradeLine.LineWidth = 2;
-                }
-
-                // Configure axes
-                plot.Axes.DateTimeTicksBottom();
-                plot.Axes.Margins(bottom: 0.1, left: 0.1);
-
-                // Add legend
-                plot.Legend.IsVisible = true;
-
-                // Generate chart as base64 string
-                var chartBytes = plot.GetImageBytes(1200, 800);
-                return Convert.ToBase64String(chartBytes);
-            }, cancellationToken);
-        }
-
-        public async Task SaveChartAsync(TradeVisualizationData visualizationData,
-                                       string filePath,
-                                       CancellationToken cancellationToken = default)
-        {
-            await Task.Run(() =>
-            {
-                var plot = new Plot();
-
-                // Configure the plot
-                plot.Title($"{visualizationData.Symbol} - {visualizationData.AlgorithmName}");
-                plot.XLabel("Time");
-                plot.YLabel("Price");
-
-                // Convert price data to arrays for plotting
-                var priceData = visualizationData.PriceData.ToArray();
-                if (priceData.Length == 0)
-                {
                     throw new InvalidOperationException("No price data available");
-                }
 
-                var times = priceData.Select(p => p.Time.ToOADate()).ToArray();
+                var times = priceData.Select(p => p.Time.ToString("o")).ToArray();
+                var opens = priceData.Select(p => (double)p.Open).ToArray();
+                var highs = priceData.Select(p => (double)p.High).ToArray();
+                var lows = priceData.Select(p => (double)p.Low).ToArray();
                 var closes = priceData.Select(p => (double)p.Close).ToArray();
 
-                // Add price line chart
-                plot.Add.Candlestick(priceData.Select(_ => new OHLC(_.Open, _.High, _.Low, _.Close, _.Time, TimeSpan.FromMinutes(1))).ToArray());
+                var entryX = visualizationData.Trades.Select(t => t.EntryTime.ToString("o")).ToArray();
+                var entryY = visualizationData.Trades.Select(t => (double)t.EntryPrice).ToArray();
+                var entrySymbols = visualizationData.Trades
+                    .Select(t => t.Direction == TradeDirection.Long ? "triangle-down" : "triangle-up").ToArray();
+                var entryColors = visualizationData.Trades.Select(t => "green").ToArray();
 
-                // Add trade markers
-                foreach (var trade in visualizationData.Trades)
+                var exitX = visualizationData.Trades.Select(t => t.ExitTime.ToString("o")).ToArray();
+                var exitY = visualizationData.Trades.Select(t => (double)t.ExitPrice).ToArray();
+                var exitSymbols = visualizationData.Trades
+                    .Select(t => t.Direction == TradeDirection.Long ? "triangle-down" : "triangle-up").ToArray();
+                var exitColors = visualizationData.Trades.Select(t => "red").ToArray();
+
+                var options = new JsonSerializerOptions { WriteIndented = false };
+                string ToJson(object obj) => JsonSerializer.Serialize(obj, options);
+
+                var html = $@"
+<!doctype html>
+<html>
+<head>
+<meta charset='utf-8'>
+<script src='https://cdn.plot.ly/plotly-2.25.2.min.js'></script>
+<style>body{{margin:0}}#chart{{width:100%;height:100vh}}</style>
+</head>
+<body>
+<div id='chart'></div>
+<script>
+const times={ToJson(times)};
+const opens={ToJson(opens)};
+const highs={ToJson(highs)};
+const lows={ToJson(lows)};
+const closes={ToJson(closes)};
+const entryX={ToJson(entryX)};
+const entryY={ToJson(entryY)};
+const entrySymbols={ToJson(entrySymbols)};
+const entryColors={ToJson(entryColors)};
+const exitX={ToJson(exitX)};
+const exitY={ToJson(exitY)};
+const exitSymbols={ToJson(exitSymbols)};
+const exitColors={ToJson(exitColors)};
+
+const candle={{
+  x:times,open:opens,high:highs,low:lows,close:closes,
+  type:'candlestick',
+  increasing:{{line:{{color:'#26a69a'}}}},
+  decreasing:{{line:{{color:'#ef5350'}}}},
+  name:'Candles'
+}};
+
+const entryTrace={{
+  x:entryX,y:entryY,mode:'markers',
+  marker:{{size:12,color:entryColors,symbol:entrySymbols}},
+  name:'Entry'
+}};
+
+const exitTrace={{
+  x:exitX,y:exitY,mode:'markers',
+  marker:{{size:12,color:exitColors,symbol:exitSymbols}},
+  name:'Exit'
+}};
+
+const layout={{
+  title:'{visualizationData.Symbol} - {visualizationData.AlgorithmName}',
+  xaxis:{{rangeslider:{{visible:false}},type:'date'}},
+  yaxis:{{autorange:true}},
+  showlegend:true
+}};
+
+Plotly.newPlot('chart',[candle,entryTrace,exitTrace],layout);
+</script>
+</body>
+</html>";
+
+                var filePath = Path.Combine(Path.GetTempPath(),
+                    $"{visualizationData.Symbol}_{DateTime.Now:yyyyMMdd_HHmmss}.html");
+                File.WriteAllText(filePath, html, Encoding.UTF8);
+
+                try
                 {
-                    // Entry marker
-                    var entryTime = trade.EntryTime.ToOADate();
-                    var entryMarker = plot.Add.Marker(entryTime, (double)trade.EntryPrice);
-                    entryMarker.Color = Colors.Green;
-                    entryMarker.Size = 15;
-                    entryMarker.LegendText = $"Entry: {trade.EntryPrice:C}";
-
-                    // Exit marker
-                    var exitTime = trade.ExitTime.ToOADate();
-                    var exitMarker = plot.Add.Marker(exitTime, (double)trade.ExitPrice);
-                    exitMarker.Color = Colors.DarkRed;
-                    exitMarker.Size = 15;
-                    exitMarker.LegendText = $"Exit: {trade.ExitPrice:C}";
-
-                    // Add line connecting entry and exit
-                    var tradeLine = plot.Add.Line(entryTime, (double)trade.EntryPrice, exitTime, (double)trade.ExitPrice);
-                    tradeLine.Color = trade.ProfitLoss >= 0 ? Colors.Green : Colors.Red;
-                    tradeLine.LineWidth = 2;
+                    Process.Start(new ProcessStartInfo("/usr/bin/open")
+                    {
+                        ArgumentList = { "-a", "Google Chrome", filePath },
+                        UseShellExecute = false
+                    });
+                }
+                catch
+                {
+                    Process.Start(new ProcessStartInfo(filePath) { UseShellExecute = true });
                 }
 
-                // Configure axes
-                plot.Axes.DateTimeTicksBottom();
-                plot.Axes.Margins(bottom: 0.1, left: 0.1);
-
-                // Add legend
-                plot.Legend.IsVisible = true;
-
-                // Save chart to file
-                plot.SavePng(filePath, 1200, 800);
+                return filePath;
             }, cancellationToken);
         }
+
+        public Task SaveChartAsync(TradeVisualizationData v, string p, CancellationToken c = default)
+            => CreateTradeChartAsync(v, c);
     }
 }

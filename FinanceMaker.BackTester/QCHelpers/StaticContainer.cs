@@ -63,6 +63,7 @@ public static class StaticContainer
         services.AddSingleton<IPricesPuller, MainPricesPuller>();
         services.AddSingleton<GoogleNewsPuller>();
         services.AddSingleton<YahooFinanceNewsPuller>();
+        services.AddSingleton<FinvizNewPuller>();
         services.AddSingleton(sp => new INewsPuller[]
         {
             sp.GetService<GoogleNewsPuller>()!,
@@ -101,6 +102,7 @@ public static class StaticContainer
         services.AddSingleton<OverNightBreakout>();
         services.AddSingleton<FibonachiRunner>();
         services.AddSingleton<FourHourGapTickersPullers>();
+        services.AddSingleton<SwingTickersPuller>();
 
 
         ServiceProvider = services.BuildServiceProvider();

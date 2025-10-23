@@ -103,6 +103,7 @@ public static class StaticContainer
         services.AddSingleton<FibonachiRunner>();
         services.AddSingleton<FourHourGapTickersPullers>();
         services.AddSingleton<SwingTickersPuller>();
+        services.AddSingleton<StockExplode>();
 
 
         ServiceProvider = services.BuildServiceProvider();

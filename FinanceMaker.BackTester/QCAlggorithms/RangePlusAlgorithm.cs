@@ -48,7 +48,7 @@ public class RangePlusAlgorithm : QCAlgorithm
         m_TestingPeriod = Resolution.Minute;
         m_ProblematicTickers = ["HUT", "ENPH"];
         // Define candidate tickers (Big 7, Intel, and other large-cap tech)
-        tickers = ["ONDS", "CLSK", "GLXY", "BTU", "NB", "PYPL", "IREN", "AMD", "TMC"];
+        tickers = ["POET", "GSIT", "BYND", "FLWS"];
         tickers = tickers.Distinct().ToList();
         var rangeAlgorithm = serviceProvider.GetService<RangeAlgorithmsRunner>();
         List<Task> tickersKeyLevelsLoader = [];
@@ -117,20 +117,20 @@ public class RangePlusAlgorithm : QCAlgorithm
                     var holdingsq = Securities[symbol].Holdings.Quantity;
                     if (holdingsq == 0)
                     {
-                        // var previousHistory = History<FinanceData>(data.Symbol, 90, m_TestingPeriod);
-                        // if (previousHistory is not null && previousHistory.Any() && previousHistory.Count() >= 90)
+                        var previousHistory = History<FinanceData>(data.Symbol, 90, m_TestingPeriod);
+                        if (previousHistory is not null && previousHistory.Any() && previousHistory.Count() >= 90)
                         {
 
-                            // var spyResult2 = previousHistory.Select(_ => _.CandleStick).ToList();
-                            // bool isBullishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close < c.Open) &&
-                            // spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close > c.Open);
+                            var spyResult2 = previousHistory.Select(_ => _.CandleStick).ToList();
+                            bool isBullishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close < c.Open) &&
+                            spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close > c.Open);
 
-                            // bool isBearishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close > c.Open) &&
-                            //                             spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close < c.Open);
+                            bool isBearishReversal = spyResult2.Take(spyResult2.Count / 2).All(c => c.Close > c.Open) &&
+                                                        spyResult2.Skip(spyResult2.Count / 2).All(c => c.Close < c.Open);
 
-                            // if (isBearishReversal) return;
+                            if (isBearishReversal) return;
 
-                            Buy(data.Symbol, data);
+                            Short(data.Symbol);
 
                         }
                     }
@@ -150,14 +150,14 @@ public class RangePlusAlgorithm : QCAlgorithm
             {
 
 
-                if (currentPrice >= avgPrice * 1.02m || currentPrice <= avgPrice * 0.985m)
+                if (currentPrice >= avgPrice * 1.06m || currentPrice <= avgPrice * 0.985m)
                 {
                     Sell(data.Symbol);
                 }
             }
             else if (holdings.Quantity < 0)
             {
-                if (currentPrice >= avgPrice * 1.015m || currentPrice <= avgPrice * 0.975m)
+                if (currentPrice <= avgPrice * 0.945m)
                 {
                     Sell(data.Symbol);
                 }
@@ -191,7 +191,7 @@ public class RangePlusAlgorithm : QCAlgorithm
     /// <param name="symbol">The symbol to short.</param>
     public void Short(Symbol symbol)
     {
-        SetHoldings(symbol, 0.5);
+        SetHoldings(symbol, -0.5);
     }
 
     /// <summary>

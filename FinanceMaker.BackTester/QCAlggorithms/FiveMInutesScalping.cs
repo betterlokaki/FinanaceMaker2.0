@@ -52,7 +52,7 @@ public class FiveMInutesScalping : QCAlgorithm
 
 
         // m_Tickers = [.. puller!.ScanTickers(TickersPullerParameters.BestBuyer, CancellationToken.None).Result];
-        m_Tickers = ["HUT"];
+        m_Tickers = ["POET", "GSIT", "BYND", "FLWS"];
         m_TestingPeriod = Resolution.Minute;
         SetTimeZone(TimeZones.NewYork);
         m_Tickers = m_Tickers.Distinct().ToList();
@@ -146,10 +146,10 @@ public class FiveMInutesScalping : QCAlgorithm
                 var d = (decimal)highOf5Minutes * 0.0005m;
                 var currentHighOfDay = restOfTheDay.Max(_ => _.CandleStick.High);
                 var s = Math.Abs(f - (decimal)currentHighOfDay);
-                if (p <= d && s >= (decimal)currentHighOfDay * 0.02m)
+                if (p <= d && s >= (decimal)currentHighOfDay * 0.03m)
                 {
-                    // Buy(symbol, data);
-                    //return;
+                    Short(symbol, data);
+                    return;
                 }
             }
         }
@@ -162,9 +162,9 @@ public class FiveMInutesScalping : QCAlgorithm
                 decimal f = (decimal)data.CandleStick.Close;
                 var currentLowOdTheDay = restOfTheDay.Max(_ => _.CandleStick.Low);
                 var s = Math.Abs(f - (decimal)currentLowOdTheDay);
-                if (Math.Abs(f - (decimal)lowOfDay) <= (decimal)lowOfDay * 0.002m && s >= (decimal)currentLowOdTheDay * 0.02m)
+                if (Math.Abs(f - (decimal)lowOfDay) <= (decimal)lowOfDay * 0.002m && s >= (decimal)currentLowOdTheDay * 0.03m)
                 {
-                    Short(symbol, data);
+                    Buy(symbol, data);
                     return;
                 }
             }

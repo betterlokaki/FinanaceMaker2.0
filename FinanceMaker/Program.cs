@@ -80,7 +80,7 @@ var password = Environment.GetEnvironmentVariable("EMAIL_PASSWORD");
 var allTickers = new HashSet<string>();
 while (true)
 {
-    var data = StaticContainer.ServiceProvider.GetService<FourHourGapTickersPullers>();
+    var data = StaticContainer.ServiceProvider.GetService<StockExplode>();
     var ticker = await data!.ScanTickers(new FinanceMaker.Common.Models.Pullers.TickersPullerParameters(), CancellationToken.None);
     var p = allTickers.Count;
 
@@ -96,6 +96,7 @@ while (true)
             var tickerList = string.Join(", ", ticker);
             var fromAddress = new MailAddress("betterlokaki@gmail.com", "FinanceMaker Bot");
             var toAddress = new MailAddress("shahartheking22@gmail.com", "Shahar Rozolio");
+            var toAdress2 = new MailAddress("evyatar.kima@mail.huji.ac.il", "Evyatar Kima");
             const string subject = "Ticker List";
             string body = $"Here are the tickers found:\n\n{tickerList}";
 
@@ -110,6 +111,14 @@ while (true)
             };
 
             using (var message = new MailMessage(fromAddress, toAddress)
+            {
+                Subject = subject,
+                Body = body
+            })
+            {
+                smtp.Send(message);
+            }
+            using (var message = new MailMessage(fromAddress, toAdress2)
             {
                 Subject = subject,
                 Body = body

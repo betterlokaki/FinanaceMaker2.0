@@ -22,7 +22,8 @@ public sealed class YahooInterdayPricesPuller : IPricesPuller
             { Period.OneMinute, "1m" },
             { Period.ThreeMinutes, "3m" },
             { Period.OneHour, "1h"},
-            { Period.Daily, "1d"}
+            { Period.Daily, "1d"},
+            { Period.Weekly, "1wk"}
         };
         m_FinanceUrl = "https://query1.finance.yahoo.com/v8/finance/chart/{0}?period1={1}&period2={2}&interval={3}&includePrePost=true&lang=en-US&region=US";
     }

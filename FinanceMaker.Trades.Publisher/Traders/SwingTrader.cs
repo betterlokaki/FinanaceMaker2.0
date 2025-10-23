@@ -1,5 +1,6 @@
 using System;
 using FinanceMaker.Common;
+using FinanceMaker.Common.Models.Finance;
 using FinanceMaker.Common.Models.Ideas.IdeaOutputs;
 using FinanceMaker.Common.Models.Pullers;
 using FinanceMaker.Common.Models.Pullers.Enums;
@@ -51,6 +52,12 @@ public class SwingTrader : ITrader
 
             var stopLoss = entryPrice * 0.985f;
             var takeProfit = entryPrice * 1.02f;
+            if (entryPrice < 0)
+            {
+                entryPrice = -entryPrice;
+                stopLoss = entryPrice * 1.015f;
+                takeProfit = entryPrice * 0.98f;
+            }
             var description = $"Entry price: {entryPrice}, Stop loss: {stopLoss}, Take profit: {takeProfit}";
             var order = new EntryExitOutputIdea(description, ticker, entryPrice, takeProfit, stopLoss, quntity);
 
@@ -89,15 +96,61 @@ public class SwingTrader : ITrader
             cancellationToken);
 
         // Pre-Market strategy
+        var premarketResult = PremarketStrategy(ticker, prices);
+        if (premarketResult != 0) return premarketResult;
+        // 5 Minutes strategy
+        var fiveMinutesResult = FiveMinutesStrategy(ticker, prices);
+        if (fiveMinutesResult != 0) return fiveMinutesResult;
+
+        return 0;
+    }
+    private float FiveMinutesStrategy(string ticker, IEnumerable<FinanceCandleStick> prices)
+    {
+        var last5MinutesPrices = prices
+            .Where(_ => _.Time.ToUniversalTime().TimeOfDay >= new TimeSpan(14, 30, 0))
+            .OrderBy(_ => _.Time)
+            .ToArray();
+
+        if (last5MinutesPrices.Length < 5) return 0;
+
+        var highest = last5MinutesPrices.Where(_ => _.High != 0).Max(_ => _.High);
+        var lowest = last5MinutesPrices.Where(_ => _.High != 0).Min(_ => _.Low);
+        var restOfTheDay = prices.Where(_ => _.Time.ToUniversalTime().TimeOfDay >= new TimeSpan(14, 35, 0)).ToArray();
+        var untillCrosHigh = restOfTheDay.SkipWhile(_ => _.Close < highest).ToArray();
+        var lastCandle = restOfTheDay.LastOrDefault();
+        if (lastCandle is null) return 0;
+
+        if (untillCrosHigh.Length != 0)
+        {
+            var highestAfterCross = untillCrosHigh.Max(_ => _.High);
+            if (highestAfterCross >= highest * 1.03f &&
+                lastCandle.Close >= highest * 0.99 &&
+                lastCandle.Close <= highest * 1.01)
+            {
+                return highest * 0.99f;
+            }
+        }
+
+
+        var untillCrossDown = restOfTheDay.SkipWhile(_ => _.Close > lowest).ToArray();
+        if (untillCrossDown.Length == 0) return 0;
+        var lowestAfterCross = untillCrossDown.Min(_ => _.Low);
+        if (lowestAfterCross <= lowest * 0.97f &&
+            lastCandle.Close <= lowest * 1.01 &&
+            lastCandle.Close >= lowest * 0.99)
+        {
+            return -lowest * 1.01f;
+        }
+        return 0;
+    }
+    private float PremarketStrategy(string ticker, IEnumerable<FinanceCandleStick> prices)
+    {
         var premarketPrices = prices
             .Where(_ => _.Time.ToUniversalTime().TimeOfDay >= new TimeSpan(9, 0, 0) &&
                 _.Time.ToUniversalTime().TimeOfDay < new TimeSpan(14, 30, 0))
             .OrderBy(_ => _.Time)
             .ToArray();
 
-        var lastCandle = premarketPrices.LastOrDefault();
-        if (lastCandle is null) return 0;
-        if (lastCandle.Time.TimeOfDay <= new TimeSpan(14, 30, 0)) return 0;
         var highOfPreMarket = premarketPrices.Where(_ => _.High != 0).Max(_ => _.High);
         var lowOfPreMarket = premarketPrices.Where(_ => _.Low != 0).Min(_ => _.Low);
 
@@ -107,12 +160,23 @@ public class SwingTrader : ITrader
             .OrderBy(_ => _.Time)
             .ToArray();
         var untillCrosHigh = afterPremarket.SkipWhile(_ => _.Close < highOfPreMarket).ToArray();
+        var lastCandle = afterPremarket.LastOrDefault();
+        if (lastCandle is null) return 0;
+        if (untillCrosHigh.Length != 0)
+        {
+            var highestAfterCross = untillCrosHigh.Max(_ => _.High);
 
-        if (untillCrosHigh.Length == 0) return 0;
-        var highestAfterCross = untillCrosHigh.Max(_ => _.High);
-        if (highestAfterCross >= highOfPreMarket * 1.03f) return highOfPreMarket * 0.99f;
+            if (highestAfterCross >= highOfPreMarket * 1.03f &&
+             lastCandle.Close >= highOfPreMarket * 0.99 && lastCandle.Close <= highOfPreMarket * 1.01)
+                return highOfPreMarket * 0.99f;
+        }
+        var untillCrossDown = afterPremarket.SkipWhile(_ => _.Close > lowOfPreMarket).ToArray();
+        if (untillCrossDown.Length == 0) return 0;
+        var lowestAfterCross = untillCrossDown.Min(_ => _.Low);
+        if (lowestAfterCross <= lowOfPreMarket * 0.97f &&
+         lastCandle.Close <= lowOfPreMarket * 1.01 && lastCandle.Close >= lowOfPreMarket * 0.99)
+            return -lowOfPreMarket * 1.01f;
 
         return 0;
     }
-
 }

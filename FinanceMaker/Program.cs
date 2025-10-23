@@ -18,60 +18,60 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using QuantConnect.Api;
-static async Task<string> GetGrokResponseAsync(string prompt)
-{
-    // Configure ChromeOptions for headless mode
-    var chromeOptions = new ChromeOptions();
-    chromeOptions.AddArguments("--headless"); // Run in headless mode
-    chromeOptions.AddArguments("--no-sandbox");
-    chromeOptions.AddArguments("--disable-dev-shm-usage");
-    chromeOptions.AddArguments("--disable-gpu");
-    chromeOptions.AddArguments("--window-size=1920,1080");
+// static async Task<string> GetGrokResponseAsync(string prompt)
+// {
+//     // Configure ChromeOptions for headless mode
+//     var chromeOptions = new ChromeOptions();
+//     chromeOptions.AddArguments("--headless"); // Run in headless mode
+//     chromeOptions.AddArguments("--no-sandbox");
+//     chromeOptions.AddArguments("--disable-dev-shm-usage");
+//     chromeOptions.AddArguments("--disable-gpu");
+//     chromeOptions.AddArguments("--window-size=1920,1080");
 
-    // Initialize WebDriver
-    using var driver = new ChromeDriver(chromeOptions);
-    try
-    {
-        // Navigate to Grok's web interface (adjust URL as needed)
-        driver.Navigate().GoToUrl("https://grok.com");
+//     // Initialize WebDriver
+//     using var driver = new ChromeDriver(chromeOptions);
+//     try
+//     {
+//         // Navigate to Grok's web interface (adjust URL as needed)
+//         driver.Navigate().GoToUrl("https://grok.com");
 
-        // Wait for the page to load (adjust selector and wait time as needed)
-        await Task.Delay(5000); // Simple delay; consider WebDriverWait for robustness
+//         // Wait for the page to load (adjust selector and wait time as needed)
+//         await Task.Delay(5000); // Simple delay; consider WebDriverWait for robustness
 
-        // Find the input field for the prompt (update selector based on actual site)
-        var inputField = driver.FindElement(By.XPath("//textarea[1]")); // Adjust selector
-        foreach (var chara in prompt)
-        {
-            inputField.SendKeys(chara.ToString());
-            await Task.Delay(new Random().Next(0, 100));
-        }
-        // inputField.SendKeys(prompt);
-        inputField.SendKeys(Keys.Enter);
+//         // Find the input field for the prompt (update selector based on actual site)
+//         var inputField = driver.FindElement(By.XPath("//textarea[1]")); // Adjust selector
+//         foreach (var chara in prompt)
+//         {
+//             inputField.SendKeys(chara.ToString());
+//             await Task.Delay(new Random().Next(0, 100));
+//         }
+//         // inputField.SendKeys(prompt);
+//         inputField.SendKeys(Keys.Enter);
 
-        // Wait for Grok's response (adjust selector and wait time as needed)
-        await Task.Delay(5000); // Wait for response to load
+//         // Wait for Grok's response (adjust selector and wait time as needed)
+//         await Task.Delay(5000); // Wait for response to load
 
-        // Find the response element (update selector based on actual site)
-        var responseElement = driver.FindElement(By.CssSelector("div[class*='response-container']")); // Adjust selector
-        string responseText = responseElement.Text;
+//         // Find the response element (update selector based on actual site)
+//         var responseElement = driver.FindElement(By.CssSelector("div[class*='response-container']")); // Adjust selector
+//         string responseText = responseElement.Text;
 
-        return string.IsNullOrEmpty(responseText) ? "No response found" : responseText;
-    }
-    catch (NoSuchElementException ex)
-    {
-        return $"Error: Element not found. Check selectors. {ex.Message}";
-    }
-    catch (Exception ex)
-    {
-        return $"Error: {ex.Message}";
-    }
-    finally
-    {
-        driver.Quit();
-    }
-}
+//         return string.IsNullOrEmpty(responseText) ? "No response found" : responseText;
+//     }
+//     catch (NoSuchElementException ex)
+//     {
+//         return $"Error: Element not found. Check selectors. {ex.Message}";
+//     }
+//     catch (Exception ex)
+//     {
+//         return $"Error: {ex.Message}";
+//     }
+//     finally
+//     {
+//         driver.Quit();
+//     }
+// }
 
-Console.WriteLine("Hello, World!");
+// Console.WriteLine("Hello, World!");
 
 // Client Portal Web API usually uses self-signed certs, so bypass validation (for dev only!)
 

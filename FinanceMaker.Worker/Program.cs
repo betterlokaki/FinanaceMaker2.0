@@ -112,7 +112,7 @@ var app = Host.CreateDefaultBuilder(args)
                 services.AddSingleton<OverNightBreakout>();
                 services.AddSingleton<IBKRClient>();
                 services.AddSingleton<IBroker, IBKRBroker>();
-                services.AddSingleton<ITrader, QCTrader>();
+                services.AddSingleton<ITrader, SwingTrader>();
                 services.AddSingleton<Worker>();
 
 

@@ -117,6 +117,7 @@ while (true)
             var fromAddress = new MailAddress("betterlokaki@gmail.com", "FinanceMaker Bot");
             var toAddress = new MailAddress("shahartheking22@gmail.com", "Shahar Rozolio");
             var toAdress2 = new MailAddress("evyatar.kima@mail.huji.ac.il", "Evyatar Kima");
+            var toAdress3 = new MailAddress("meir.rozolio@gmail.com", "Meir Rozolio");
             const string subject = "Ticker List";
             string body = $"Here are the tickers found:\n\n{tickerList}";
 
@@ -139,6 +140,14 @@ while (true)
                 smtp.Send(message);
             }
             using (var message = new MailMessage(fromAddress, toAdress2)
+            {
+                Subject = subject,
+                Body = body
+            })
+            {
+                smtp.Send(message);
+            }
+            using (var message = new MailMessage(fromAddress, toAdress3)
             {
                 Subject = subject,
                 Body = body

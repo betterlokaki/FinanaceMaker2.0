@@ -18,7 +18,8 @@ namespace FinanceMaker.Common.Models.Finance
 
         #endregion
 
-
+        public bool IsGreen => Close > Open;
+        public bool IsRed => Open > Close;
 
         #region Why Do I do stuff Data
 

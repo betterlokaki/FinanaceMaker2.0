@@ -24,6 +24,7 @@ public class StockExplode : FinvizTickersPuller
     public override async Task<IEnumerable<string>> ScanTickers(TickersPullerParameters scannerParams, CancellationToken cancellationToken)
     {
         var tickers = await GetTickers(m_FinvizUrl, cancellationToken);
+        // List<string> tickers = ["OPEN"];
         var relevantTickers = new ConcurrentBag<string>();
         await Parallel.ForEachAsync(tickers, cancellationToken, async (ticker, ct) =>
         {
@@ -49,9 +50,20 @@ public class StockExplode : FinvizTickersPuller
                         weeklyCandles[i + 2].Close > weeklyCandles[i + 2].Open)
                     {
                         // Found a quick gap up
-                        relevantTickers.Add(ticker);
-                        break;
+                        // Check if current price is near the gap up start price
+                        var latestPrice = weeklyCandles.Last().Close;
+                        var gapStartPrice = weeklyCandles[i].Open;
+
+                        var priceRisk = 0.05; // 4% range
+
+                        if (weeklyCandles.Last().IsRed && latestPrice <= gapStartPrice * (1 + priceRisk) && latestPrice >= gapStartPrice * (1 - priceRisk))
+                        {
+                            relevantTickers.Add(ticker);
+                            break;
+
+                        }
                     }
+
                 }
             }
         });

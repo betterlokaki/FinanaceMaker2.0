@@ -7,10 +7,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Accord.Math;
+using FinanceMaker.Algorithms.Runners;
 using FinanceMaker.BackTester;
 using FinanceMaker.BackTester.QCAlggorithms;
 using FinanceMaker.BackTester.QCHelpers;
+using FinanceMaker.Common;
 using FinanceMaker.Common.Extensions;
+using FinanceMaker.Common.Models.Pullers.Enums;
 using FinanceMaker.Publisher.Orders.Broker;
 using FinanceMaker.Pullers.TickerPullers;
 using HtmlAgilityPack;
@@ -78,22 +81,39 @@ using QuantConnect.Api;
 // await BackTester.Runner(typeof(FiveMInutesScalping));
 var password = Environment.GetEnvironmentVariable("EMAIL_PASSWORD");
 var allTickers = new HashSet<string>();
+var scanner = StaticContainer.ServiceProvider.GetService<StockExplode>();
+var fibonachiRunner = StaticContainer.ServiceProvider.GetService<FibonachiRunner>();
 while (true)
 {
-    var data = StaticContainer.ServiceProvider.GetService<StockExplode>();
-    var ticker = await data!.ScanTickers(new FinanceMaker.Common.Models.Pullers.TickersPullerParameters(), CancellationToken.None);
+    var ticker = await scanner!.ScanTickers(new FinanceMaker.Common.Models.Pullers.TickersPullerParameters(), CancellationToken.None);
     var p = allTickers.Count;
 
+    var tickerToPrice = new Dictionary<string, decimal>();
     foreach (var t in ticker)
     {
         allTickers.Add(t);
+        var fibResult = await fibonachiRunner!.Run(new RangeAlgorithmInput(t, DateTime.Now.Date.Subtract(TimeSpan.FromDays(3 * 365)), DateTime.Now, Period.Weekly, Algorithm.Fibonachi), CancellationToken.None);
+        var fibLevels = fibResult.KeyLevels;
+
+        // don't forget I've already have the prices in fibResult.Candles
+        var latestPrice = fibResult.Last().Close;
+        var closestLevel = fibLevels.OrderBy(level => Math.Abs(level - latestPrice)).First();
+        Console.WriteLine($"Ticker: {t}, Latest Price: {latestPrice}, Closest Fibonacci Level: {closestLevel}");
+
+        tickerToPrice[t] = (decimal)closestLevel;
     }
 
     if (p < allTickers.Count)
     {
         try
         {
-            var tickerList = string.Join(", ", ticker);
+            var tickerList = string.Join("\n", tickerToPrice.Select(kvp =>
+                $"[\n    \"{kvp.Key}\": {{\n" +
+                $"        \"Entry\": {kvp.Value:F2},\n" +
+                $"        \"Stop Loss\": {kvp.Value * 0.95m:F2},\n" +
+                $"        \"Take Profit\": {kvp.Value * 1.15m:F2}\n" +
+                $"    }}\n]"
+            ));
             var fromAddress = new MailAddress("betterlokaki@gmail.com", "FinanceMaker Bot");
             var toAddress = new MailAddress("shahartheking22@gmail.com", "Shahar Rozolio");
             var toAdress2 = new MailAddress("evyatar.kima@mail.huji.ac.il", "Evyatar Kima");

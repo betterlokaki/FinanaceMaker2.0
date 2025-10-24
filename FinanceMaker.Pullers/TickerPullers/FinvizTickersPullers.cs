@@ -22,47 +22,61 @@ namespace FinanceMaker.Pullers.TickerPullers
 
         public async virtual Task<IEnumerable<string>> ScanTickers(TickersPullerParameters scannerParams, CancellationToken cancellationToken)
         {
-
-            var url = string.Join("", m_FinvizUrl, GenerateParams(scannerParams));
-            var httpClient = m_RequestService.CreateClient();
-            httpClient.AddBrowserUserAgent();
-            var finvizResult = await httpClient.GetAsync(url, cancellationToken);
-
-            if (!finvizResult.IsSuccessStatusCode)
+            List<string> tickers = [];
+            for (int i = 0; i < 30; i++)
             {
-                throw new NotSupportedException($"Something went wrong with finviz {finvizResult.RequestMessage}");
+                var url = string.Join("", m_FinvizUrl, GenerateParams(scannerParams)) + $"&r={i * 20 + 1}";
+                var httpClient = m_RequestService.CreateClient();
+                httpClient.AddBrowserUserAgent();
+                var finvizResult = await httpClient.GetAsync(url, cancellationToken);
+
+                if (!finvizResult.IsSuccessStatusCode)
+                {
+
+                    break;
+                }
+
+                var finvizHtml = await finvizResult.Content.ReadAsStringAsync(cancellationToken);
+                var onlyTickersData = finvizHtml.Split(m_FinvizStartSperator)[1]
+                                                .Split(m_FinvizEndSeperator)[0]
+                                                .Split("\n")
+                                                .Select(tickerData => tickerData.Split("|")[0])
+                                                .Where(ticker => !string.IsNullOrEmpty(ticker))
+                                                .ToArray();
+
+                tickers.AddRange(onlyTickersData);
+
             }
 
-            var finvizHtml = await finvizResult.Content.ReadAsStringAsync(cancellationToken);
-            var onlyTickersData = finvizHtml.Split(m_FinvizStartSperator)[1]
-                                            .Split(m_FinvizEndSeperator)[0]
-                                            .Split("\n")
-                                            .Select(tickerData => tickerData.Split("|")[0])
-                                            .Where(ticker => !string.IsNullOrEmpty(ticker))
-                                            .ToArray();
-
-            return onlyTickersData;
+            return tickers;
         }
         protected async Task<string[]> GetTickers(string url, CancellationToken cancellationToken)
         {
             var httpClient = m_RequestService.CreateClient();
             httpClient.AddBrowserUserAgent();
-            var finvizResult = await httpClient.GetAsync(url, cancellationToken);
-
-            if (!finvizResult.IsSuccessStatusCode)
+            List<string> tickers = [];
+            for (int i = 0; i < 30; i++)
             {
-                throw new NotSupportedException($"Something went wrong with finviz {finvizResult.RequestMessage}");
+                url += $"&r={i * 20 + 1}";
+                var finvizResult = await httpClient.GetAsync(url, cancellationToken);
+
+                if (!finvizResult.IsSuccessStatusCode)
+                {
+                    break;
+                }
+
+                var finvizHtml = await finvizResult.Content.ReadAsStringAsync(cancellationToken);
+                var onlyTickersData = finvizHtml.Split(m_FinvizStartSperator)[1]
+                                                .Split(m_FinvizEndSeperator)[0]
+                                                .Split("\n")
+                                                .Select(tickerData => tickerData.Split("|")[0])
+                                                .Where(ticker => !string.IsNullOrEmpty(ticker))
+                                                .ToArray();
+
+                tickers.AddRange(onlyTickersData);
             }
 
-            var finvizHtml = await finvizResult.Content.ReadAsStringAsync(cancellationToken);
-            var onlyTickersData = finvizHtml.Split(m_FinvizStartSperator)[1]
-                                            .Split(m_FinvizEndSeperator)[0]
-                                            .Split("\n")
-                                            .Select(tickerData => tickerData.Split("|")[0])
-                                            .Where(ticker => !string.IsNullOrEmpty(ticker))
-                                            .ToArray();
-
-            return onlyTickersData;
+            return tickers.ToArray();
         }
 
         private string GenerateParams(TickersPullerParameters scannerParams)

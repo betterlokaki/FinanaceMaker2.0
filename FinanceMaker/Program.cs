@@ -78,7 +78,6 @@ using QuantConnect.Api;
 
 // Client Portal Web API usually uses self-signed certs, so bypass validation (for dev only!)
 
-// await BackTester.Runner(typeof(FiveMInutesScalping));
 var password = Environment.GetEnvironmentVariable("EMAIL_PASSWORD");
 var allTickers = new HashSet<string>();
 var scanner = StaticContainer.ServiceProvider.GetService<StockExplode>();

@@ -1,32 +1,27 @@
 using System;
-using CsvHelper.Configuration.Attributes;
 using FinanceMaker.BackTester.QCHelpers;
-using FinanceMaker.Common.Models.Finance;
-using FinanceMaker.Common.Models.Pullers;
-using FinanceMaker.Publisher.Orders.Trades;
-using FinanceMaker.Pullers.TickerPullers;
-using Microsoft.Extensions.DependencyInjection;
 using QuantConnect;
 using QuantConnect.Algorithm;
-using QuantConnect.Data.Market;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
+
 namespace FinanceMaker.BackTester.QCAlggorithms;
 
-public class FiveMInutesScalping : QCAlgorithm
+/// <summary>
+/// This algorithm is a bit different from the others,
+/// as it is now about time to buy, and tickers more than the actucal algorithm
+/// </summary>
+public class SwingAlgorithm : QCAlgorithm
 {
-    private Dictionary<string, int> m_TickerToPosition = new();
-    private Dictionary<string, decimal> m_TickerToAvgPrice = new();
+    private readonly List<string> m_Tickers = [];
+    private readonly Dictionary<string, DateTime> m_TickerTriggredTimes = [];
+    private Dictionary<string, int> m_TickerToPosition = [];
+    private Dictionary<string, decimal> m_TickerToAvgPrice = [];
+    private Dictionary<string, float> m_TickerToMoney = [];
     private Dictionary<string, int> m_TickerToLoss = new();
+    private readonly HashSet<string> m_NeverTradeThisTicker = new();
     private Dictionary<string, int> m_TickerToWin = new();
-    private List<string> m_Tickers = new();
-    private Dictionary<string, float> m_TickerToMoney = new();
     private Resolution m_TestingPeriod;
-    private Dictionary<string, FinanceData> m_FourHourCandleOfTheDay = new();
-    private List<string> m_NeverTradeThisTicker = new();
-
-    // Track open position and average price per ticker for P&L calculation
-
 
     public override void Initialize()
     {
@@ -34,28 +29,27 @@ public class FiveMInutesScalping : QCAlgorithm
         var startDate = endDate.AddDays(-1);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
-        SetCash(10_000); // Starting cash for the algorithm
+
+        SetCash(20_000); // Starting cash for the algorithm
         SetStartDate(startDate);
         SetEndDate(endDate);
-        SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(0))); // $1 per trade
+        SetSecurityInitializer(security => security.SetFeeModel(new ConstantFeeModel(7.5m))); // $1 per trade
         FinanceData.StartDate = startDate;
-        FinanceData.EndDate = endDate;      // Set Strategy Cash
+        FinanceData.EndDate = endDate;
 
-        // Find more symbols here: http://quantconnect.com/data
-        // Ticker from 3/10 "RGTI", "ASTS", "CRCL", "PL", "STLA", "SOUN" 
-        // Ticker from 6/10 "QUBAT", "NB", "RUM", "OSCR", "RGTI", "QBTS", "RCAT", "QS", "ASPN"
-        // Ticker from 7/10 "ONDS", "CLSK", "GLXY", "BTU", "NB", "PYPL", "IREN", "AMD", "TMC"
-        // Ticker from 8/10 "FIG", "IREN", "JHX", "TMC", "PYPL", "POET", "RGTI", "SOFI"
-        // Tciker from 10/10 "HUT", "HIVE", "WULF", "NB", "UAMY"
-        // Ticker from 14/10 "ABAT", "WMT", "NVTS", "UAMY"
-        var puller = StaticContainer.ServiceProvider.GetRequiredService<SwingTickersPuller>();
-
-
-        // m_Tickers = [.. puller!.ScanTickers(TickersPullerParameters.BestBuyer, CancellationToken.None).Result];
-        m_Tickers = ["POET", "GSIT", "BYND", "FLWS"];
         m_TestingPeriod = Resolution.Minute;
         SetTimeZone(TimeZones.NewYork);
-        m_Tickers = m_Tickers.Distinct().ToList();
+        string[] tickers = [
+           "POET", "PL", "PONY", "ORCX", "OPEN", "ONDS", "OMER", "OLMA", "OKLO"
+        ];
+        m_Tickers.AddRange(tickers.Distinct());
+        foreach (var ticker in m_Tickers)
+        {
+            var time = new DateTime(2025, 10, 23, 22, 53, 0, DateTimeKind.Local);
+            var timeUtc = time.ConvertToUtc(TimeZones.Jerusalem);
+            m_TickerTriggredTimes[ticker] = timeUtc;
+        }
+
         Debug($"Tickers count: {m_Tickers.Count}");
         foreach (var ticker in m_Tickers)
         {
@@ -65,22 +59,6 @@ public class FiveMInutesScalping : QCAlgorithm
             m_TickerToPosition[ticker] = 0;
             m_TickerToAvgPrice[ticker] = 0m;
         }
-    }
-    public void OnFourHoursCandle(TradeBar bar)
-    {
-        m_FourHourCandleOfTheDay[bar.Symbol.Value] = m_FourHourCandleOfTheDay[bar.Symbol.Value] = new FinanceData
-        {
-            Symbol = bar.Symbol,
-            CandleStick = new EMACandleStick
-            (
-                bar.Time,
-                (float)bar.Open,
-               (float)bar.Close,
-               (float)bar.High,
-               (float)bar.Low, (long)bar.Volume)
-
-
-        };
     }
     private void CloseLogic(FinanceData data)
     {
@@ -92,96 +70,41 @@ public class FiveMInutesScalping : QCAlgorithm
         {
             decimal f = (decimal)price;
             if (price == 0) continue;
-            if (f >= avgPrice * 1.04m)
+            if (f >= avgPrice * 1.07m)
             {
                 Sell(data.Symbol);
-                return;
-            }
-            else if (f <= avgPrice * 0.97m)
-            {
-                Sell(data.Symbol);
-                return;
                 m_NeverTradeThisTicker.Add(data.Symbol.Value);
-            }
-            else if (data.Time.TimeOfDay >= new TimeSpan(20, 30, 0))
-            {
-                Debug("nigger");
-                Sell(data.Symbol);
-                return;
 
+                return;
+            }
+            else if (f <= avgPrice * 0.98m)
+            {
+                Sell(data.Symbol);
+                m_NeverTradeThisTicker.Add(data.Symbol.Value);
+
+                return;
+            }
+            else if (Time >= EndDate.AddHours(-5))
+            {
+                Sell(data.Symbol);
+                m_NeverTradeThisTicker.Add(data.Symbol.Value);
+
+                return;
             }
         }
 
     }
     public void OnData(FinanceData data)
     {
-        var symbol = data.Symbol;
-        if (!m_Tickers.Contains(symbol.Value)) return;
+        if (!m_TickerTriggredTimes.TryGetValue(data.Symbol.Value, out var triggerTime)) return;
+        if (Time < triggerTime) return;
         CloseLogic(data);
-        if (data.CandleStick.Close == 0) return;
-        var holdingsq = Securities[symbol].Holdings.Quantity;
-        if (Time.TimeOfDay < new TimeSpan(14, 35, 0) || holdingsq != 0 || data.Time.TimeOfDay >= new TimeSpan(20, 30, 0))
-        {
-            return;
-        }
-        var fiveMinutes = History<FinanceData>(symbol, 5, m_TestingPeriod, extendedMarketHours: false).ToList();
-        if (fiveMinutes.Count < 5) return;
-
-        var lowOfDay = fiveMinutes.Min(c => c.CandleStick.Low);
-        var highOf5Minutes = fiveMinutes.Max(c => c.CandleStick.High);
-        var restOfTheDay = History<FinanceData>(symbol, Time.TimeOfDay - new TimeSpan(14, 35, 0), m_TestingPeriod);
-        var untillCrossUp = restOfTheDay.FirstOrDefault(_ => _.CandleStick.Close >= highOf5Minutes);
-        var untillCrossDown = restOfTheDay.FirstOrDefault(_ => _.CandleStick.Close <= lowOfDay);
-
-        if (untillCrossUp is null && untillCrossDown is null) return;
-        float[] prices = [data.CandleStick.Open, data.CandleStick.Low, data.CandleStick.High, data.CandleStick.Close];
-        if (untillCrossUp is not null)
-        {
-            var afterCrossing = restOfTheDay.SkipWhile(_ => _.Time <= untillCrossUp.Time).ToList();
-            if (afterCrossing.Count == 0) return;
-            // foreach (var price in prices)
-            {
-                decimal f = (decimal)data.CandleStick.Close;
-                var p = Math.Abs(f - (decimal)highOf5Minutes);
-                var d = (decimal)highOf5Minutes * 0.0005m;
-                var currentHighOfDay = restOfTheDay.Max(_ => _.CandleStick.High);
-                var s = Math.Abs(f - (decimal)currentHighOfDay);
-                if (p <= d && s >= (decimal)currentHighOfDay * 0.0m)
-                {
-                    Short(symbol, data);
-                    return;
-                }
-            }
-        }
-        if (untillCrossDown is not null)
-        {
-            var afterCrossing = restOfTheDay.SkipWhile(_ => _.Time <= untillCrossDown.Time).ToList();
-            if (afterCrossing.Count == 0) return;
-            // foreach (var price in prices)
-            {
-                decimal f = (decimal)data.CandleStick.Close;
-                var currentLowOdTheDay = restOfTheDay.Max(_ => _.CandleStick.Low);
-                var s = Math.Abs(f - (decimal)currentLowOdTheDay);
-                if (Math.Abs(f - (decimal)lowOfDay) <= (decimal)lowOfDay * 0.002m && s >= (decimal)currentLowOdTheDay * 0.03m)
-                {
-                    Buy(symbol, data);
-                    return;
-                }
-            }
-        }
-
+        if (m_NeverTradeThisTicker.Contains(data.Symbol.Value)) return;
+        var holdings = Securities[data.Symbol].Holdings;
+        if (holdings.Quantity != 0) return;
+        Buy(data.Symbol, data);
     }
-    private bool IsItHammer(FinanceCandleStick candle)
-    {
-        var body = Math.Abs(candle.Close - candle.Open);
-        var lowerShadow = candle.Open > candle.Close ? candle.Close - candle.Low : candle.Open - candle.Low;
-        var upperShadow = candle.High - Math.Max(candle.Close, candle.Open);
 
-        // Hammer criteria: small body, long lower shadow, little or no upper shadow
-        if (body == 0) return false; // Avoid doji
-        bool isHammer = lowerShadow >= 2 * body && upperShadow <= body;
-        return isHammer;
-    }
     /// <summary>
     /// Executes a buy order for the given symbol.
     /// </summary>

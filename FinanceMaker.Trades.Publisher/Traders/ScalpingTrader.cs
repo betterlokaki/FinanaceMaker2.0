@@ -10,15 +10,18 @@ using FinanceMaker.Pullers.PricesPullers.Interfaces;
 using FinanceMaker.Pullers.TickerPullers;
 
 namespace FinanceMaker.Publisher.Traders;
-
-public class SwingTrader : ITrader
+/// <summary>
+/// This trader pulls the stocks from finviz which have a gap up in the last 4 hours
+/// and then trade them based on the range algorithm. but with much much higher risk: reward ratio.
+/// </summary>
+public class ScalpingTrader : ITrader
 {
-    private readonly SwingTickersPuller m_TickersPullers;
+    private readonly FourHourGapTickersPullers m_TickersPullers;
     private readonly IPricesPuller m_PricesPuller;
     private readonly IBroker m_Broker;
     private readonly HashSet<string> m_Tickers = [];
     private const int STARTED_MONEY = 29_500;
-    public SwingTrader(SwingTickersPuller tickersPullers, IPricesPuller pricesPuller, IBroker broker)
+    public ScalpingTrader(FourHourGapTickersPullers tickersPullers, IPricesPuller pricesPuller, IBroker broker)
     {
         m_TickersPullers = tickersPullers;
         m_PricesPuller = pricesPuller;
@@ -129,15 +132,15 @@ public class SwingTrader : ITrader
         }
 
 
-        // var untillCrossDown = restOfTheDay.SkipWhile(_ => _.Close > lowest).ToArray();
-        // if (untillCrossDown.Length == 0) return 0;
-        // var lowestAfterCross = untillCrossDown.Min(_ => _.Low);
-        // if (lowestAfterCross <= lowest * 0.97f &&
-        //     lastCandle.Close <= lowest * 1.01 &&
-        //     lastCandle.Close >= lowest * 0.99)
-        // {
-        //     return -lowest * 1.01f;
-        // }
+        var untillCrossDown = restOfTheDay.SkipWhile(_ => _.Close > lowest).ToArray();
+        if (untillCrossDown.Length == 0) return 0;
+        var lowestAfterCross = untillCrossDown.Min(_ => _.Low);
+        if (lowestAfterCross <= lowest * 0.97f &&
+            lastCandle.Close <= lowest * 1.01 &&
+            lastCandle.Close >= lowest * 0.99)
+        {
+            return -lowest * 1.01f;
+        }
         return 0;
     }
     private float PremarketStrategy(string ticker, IEnumerable<FinanceCandleStick> prices)

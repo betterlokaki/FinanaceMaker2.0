@@ -4,6 +4,7 @@ using System.Net.Http;
 using FinanceMaker.Algorithms;
 using FinanceMaker.Algorithms.News.Analyziers;
 using FinanceMaker.Algorithms.News.Analyziers.Interfaces;
+using FinanceMaker.Algorithms.Runners;
 using FinanceMaker.Common;
 using FinanceMaker.Common.Models.Ideas.IdeaInputs;
 using FinanceMaker.Common.Models.Ideas.IdeaOutputs;
@@ -56,13 +57,18 @@ var app = Host.CreateDefaultBuilder(args)
                 services.AddSingleton<MarketStatus>();
                 services.AddSingleton<FinvizTickersPuller>();
                 services.AddSingleton<TradingViewTickersPuller>();
+                services.AddSingleton<NivTickersPuller>();
                 services.AddSingleton<MostVolatiltyTickers>();
                 services.AddSingleton(sp => new IParamtizedTickersPuller[]
                 {
-                    sp.GetService<MostVolatiltyTickers>()
+            //sp.GetService<FinvizTickersPuller>()!,
+            sp.GetService<NivTickersPuller>()!,
+            sp.GetService<MostVolatiltyTickers>()!,
+                });
+                services.AddSingleton(sp => new ITickerPuller[]
+                {
                 });
                 services.AddSingleton(sp => Array.Empty<IRelatedTickersPuller>());
-                services.AddSingleton(sp => Array.Empty<ITickerPuller>());
                 services.AddSingleton<MainTickersPuller>();
 
                 services.AddSingleton<YahooPricesPuller>();
@@ -70,25 +76,24 @@ var app = Host.CreateDefaultBuilder(args)
 
                 services.AddSingleton(sp => new IPricesPuller[]
                 {
-                    // sp.GetService<YahooPricesPuller>(),
-                    sp.GetService<YahooInterdayPricesPuller>(),
+            // sp.GetService<YahooPricesPuller>(),
+            sp.GetService<YahooInterdayPricesPuller>()!,
 
                 });
                 services.AddSingleton<IPricesPuller, MainPricesPuller>();
                 services.AddSingleton<GoogleNewsPuller>();
                 services.AddSingleton<YahooFinanceNewsPuller>();
+                services.AddSingleton<FinvizNewPuller>();
                 services.AddSingleton(sp => new INewsPuller[]
                 {
-                    sp.GetService<GoogleNewsPuller>(),
-                    sp.GetService<YahooFinanceNewsPuller>(),
-                    sp.GetService<FinvizNewPuller>(),
+            sp.GetService<GoogleNewsPuller>()!,
+            sp.GetService<YahooFinanceNewsPuller>()!,
+            sp.GetService<FinvizNewPuller>()!,
 
                 });
-
                 services.AddSingleton<KeyLevelsRunner>();
                 services.AddSingleton<EMARunner>();
                 services.AddSingleton<BreakOutDetectionRunner>();
-
                 services.AddSingleton<IEnumerable<IAlgorithmRunner<RangeAlgorithmInput>>>(
                     sp =>
                     {
@@ -97,22 +102,25 @@ var app = Host.CreateDefaultBuilder(args)
                         var runner2 = sp.GetService<BreakOutDetectionRunner>();
 
 
-                        return [runner1, runner2, runner3];
+                        return [runner1!, runner2!, runner3!];
                     }
                 );
-                services.AddSingleton<FourHourGapTickersPullers>();
+
                 services.AddSingleton<RangeAlgorithmsRunner>();
                 services.AddSingleton<INewsPuller, MainNewsPuller>();
                 services.AddSingleton<KeywordsDetectorAnalysed>();
                 services.AddSingleton<INewsAnalyzer[]>(sp => [
-                    sp.GetService<KeywordsDetectorAnalysed>()
+                    sp.GetService<KeywordsDetectorAnalysed>()!
                 ]);
                 services.AddSingleton<INewsAnalyzer, NewsAnalyzer>();
                 services.AddSingleton<IdeaBase<TechnicalIdeaInput, EntryExitOutputIdea>, OverNightBreakout>();
                 services.AddSingleton<OverNightBreakout>();
+                services.AddSingleton<FibonachiRunner>();
+                services.AddSingleton<FourHourGapTickersPullers>();
+                services.AddSingleton<StockExplode>();
                 services.AddSingleton<IBKRClient>();
                 services.AddSingleton<IBroker, IBKRBroker>();
-                services.AddSingleton<ITrader, ScalpingTrader>();
+                services.AddSingleton<ITrader, SwingTrader>();
                 services.AddSingleton<Worker>();
 
 

@@ -13,12 +13,12 @@ namespace FinanceMaker.Publisher.Traders;
 
 public class SwingTrader : ITrader
 {
-    private readonly SwingTickersPuller m_TickersPullers;
+    private readonly StockExplode m_TickersPullers;
     private readonly IPricesPuller m_PricesPuller;
     private readonly IBroker m_Broker;
     private readonly HashSet<string> m_Tickers = [];
     private const int STARTED_MONEY = 29_500;
-    public SwingTrader(SwingTickersPuller tickersPullers, IPricesPuller pricesPuller, IBroker broker)
+    public SwingTrader(StockExplode tickersPullers, IPricesPuller pricesPuller, IBroker broker)
     {
         m_TickersPullers = tickersPullers;
         m_PricesPuller = pricesPuller;
@@ -47,8 +47,8 @@ public class SwingTrader : ITrader
 
             if (quntity == 0) continue;
 
-            var stopLoss = entryPrice * 0.985f;
-            var takeProfit = entryPrice * 1.02f;
+            var stopLoss = entryPrice * 0.98f;
+            var takeProfit = entryPrice * 1.05f;
             if (entryPrice < 0)
             {
                 entryPrice = -entryPrice;
@@ -121,7 +121,7 @@ public class SwingTrader : ITrader
         {
             var highestAfterCross = untillCrosHigh.Max(_ => _.High);
             if (highestAfterCross >= highest * 1.03f &&
-                lastCandle.Close >= highest * 0.99 &&
+                lastCandle.Close >= highest * 0.98 &&
                 lastCandle.Close <= highest * 1.01)
             {
                 return highest * 0.99f;
@@ -164,15 +164,15 @@ public class SwingTrader : ITrader
             var highestAfterCross = untillCrosHigh.Max(_ => _.High);
 
             if (highestAfterCross >= highOfPreMarket * 1.03f &&
-             lastCandle.Close >= highOfPreMarket * 0.99 && lastCandle.Close <= highOfPreMarket * 1.01)
+             lastCandle.Close >= highOfPreMarket * 0.98 && lastCandle.Close <= highOfPreMarket * 1.01)
                 return highOfPreMarket * 0.99f;
         }
-        var untillCrossDown = afterPremarket.SkipWhile(_ => _.Close > lowOfPreMarket).ToArray();
-        if (untillCrossDown.Length == 0) return 0;
-        var lowestAfterCross = untillCrossDown.Min(_ => _.Low);
-        if (lowestAfterCross <= lowOfPreMarket * 0.97f &&
-         lastCandle.Close <= lowOfPreMarket * 1.01 && lastCandle.Close >= lowOfPreMarket * 0.99)
-            return -lowOfPreMarket * 1.01f;
+        // var untillCrossDown = afterPremarket.SkipWhile(_ => _.Close > lowOfPreMarket).ToArray();
+        // if (untillCrossDown.Length == 0) return 0;
+        // var lowestAfterCross = untillCrossDown.Min(_ => _.Low);
+        // if (lowestAfterCross <= lowOfPreMarket * 0.97f &&
+        //  lastCandle.Close <= lowOfPreMarket * 1.01 && lastCandle.Close >= lowOfPreMarket * 0.99)
+        //     return -lowOfPreMarket * 1.01f;
 
         return 0;
     }

@@ -34,7 +34,7 @@ public class StockExplode : FinvizTickersPuller
             // For example, checking for specific financial metrics or patterns
 
             var weeklyCandles = (await m_Puller.GetTickerPrices(new PricesPullerParameters(ticker,
-             DateTime.Now.Date.Subtract(TimeSpan.FromDays(365)),
+             DateTime.Now.Date.Subtract(TimeSpan.FromDays(365 * 5)),
               DateTime.Now, Period.Weekly),
 
               ct)).ToList();
@@ -46,7 +46,7 @@ public class StockExplode : FinvizTickersPuller
                     var endPrice = weeklyCandles[i + 2].Close;
                     var percentageChange = (endPrice - startPrice) / startPrice * 100;
 
-                    if (percentageChange >= 50 &&
+                    if ((percentageChange >= (weeklyCandles[i].Open > 15 ? 20 : 50)) &&
                         weeklyCandles[i].Close > weeklyCandles[i].Open &&
                         weeklyCandles[i + 1].Close > weeklyCandles[i + 1].Open &&
                         weeklyCandles[i + 2].Close > weeklyCandles[i + 2].Open)

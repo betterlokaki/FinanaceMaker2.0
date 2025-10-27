@@ -46,7 +46,7 @@ public class StockExplode : FinvizTickersPuller
                     var endPrice = weeklyCandles[i + 2].Close;
                     var percentageChange = (endPrice - startPrice) / startPrice * 100;
 
-                    if ((percentageChange >= (weeklyCandles[i].Open > 15 ? 20 : 50)) &&
+                    if ((percentageChange >= (weeklyCandles[i].Open > 15 ? 30 : 80)) &&
                         weeklyCandles[i].Close > weeklyCandles[i].Open &&
                         weeklyCandles[i + 1].Close > weeklyCandles[i + 1].Open &&
                         weeklyCandles[i + 2].Close > weeklyCandles[i + 2].Open)

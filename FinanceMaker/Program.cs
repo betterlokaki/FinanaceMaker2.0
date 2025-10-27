@@ -107,11 +107,11 @@ while (true)
         try
         {
             var tickerList = string.Join("\n", tickerToPrice.Select(kvp =>
-                $"[\n    \"{kvp.Key}\": {{\n" +
+                $"\n    \"{kvp.Key}\": {{\n" +
                 $"        \"Entry\": {kvp.Value:F2},\n" +
                 $"        \"Stop Loss\": {kvp.Value * 0.95m:F2},\n" +
                 $"        \"Take Profit\": {kvp.Value * 1.15m:F2}\n" +
-                $"    }}\n]"
+                $"    }}\n"
             ));
             var fromAddress = new MailAddress("betterlokaki@gmail.com", "FinanceMaker Bot");
             var toAddress = new MailAddress("shahartheking22@gmail.com", "Shahar Rozolio");

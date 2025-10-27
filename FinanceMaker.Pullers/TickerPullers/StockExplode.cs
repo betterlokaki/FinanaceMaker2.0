@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using Accord;
 using FinanceMaker.Common;
 using FinanceMaker.Common.Models.Pullers;
 using FinanceMaker.Common.Models.Pullers.Enums;
@@ -24,6 +25,7 @@ public class StockExplode : FinvizTickersPuller
     public override async Task<IEnumerable<string>> ScanTickers(TickersPullerParameters scannerParams, CancellationToken cancellationToken)
     {
         var tickers = await GetTickers(m_FinvizUrl, cancellationToken);
+        // tickers = tickers.Take(1).ToArray();
         // List<string> tickers = ["OPEN"];
         var relevantTickers = new ConcurrentBag<string>();
         await Parallel.ForEachAsync(tickers, cancellationToken, async (ticker, ct) =>
@@ -54,7 +56,7 @@ public class StockExplode : FinvizTickersPuller
                         var latestPrice = weeklyCandles.Last().Close;
                         var gapStartPrice = weeklyCandles[i].Open;
 
-                        var priceRisk = 0.05; // 4% range
+                        var priceRisk = 0.2; // 4% range
 
                         if (weeklyCandles.Last().IsRed && latestPrice <= gapStartPrice * (1 + priceRisk) && latestPrice >= gapStartPrice * (1 - priceRisk))
                         {

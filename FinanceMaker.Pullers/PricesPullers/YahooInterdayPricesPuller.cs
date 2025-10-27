@@ -128,7 +128,7 @@ public sealed class YahooInterdayPricesPuller : IPricesPuller
                                                         CancellationToken cancellationToken)
     {
         var client = m_RequestsService.CreateClient();
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("Itay-The-Best-Agent");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Itay-The-Best-Agent-The-cool-of-the-world-123-123-123123");
 
         //client.AddBrowserUserAgent();
         var startTimeA = ((DateTimeOffset)startDate.ToUniversalTime());
@@ -152,6 +152,8 @@ public sealed class YahooInterdayPricesPuller : IPricesPuller
                     var data = await response.Content.ReadAsStringAsync(cancellationToken);
                     break;
                 }
+
+                var a = await response.Content.ReadAsStringAsync(cancellationToken); ;
             }
             catch
             {

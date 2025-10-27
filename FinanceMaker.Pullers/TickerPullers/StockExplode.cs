@@ -58,7 +58,7 @@ public class StockExplode : FinvizTickersPuller
 
                         var priceRisk = 0.2; // 4% range
 
-                        if (weeklyCandles.Last().IsRed && latestPrice <= gapStartPrice * (1 + priceRisk) && latestPrice >= gapStartPrice * (1 - priceRisk))
+                        if (weeklyCandles.Last().IsRed && latestPrice <= gapStartPrice && latestPrice >= gapStartPrice * (1 - priceRisk))
                         {
                             relevantTickers.Add(ticker);
                             break;

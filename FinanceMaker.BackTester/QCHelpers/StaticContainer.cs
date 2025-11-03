@@ -18,6 +18,7 @@ using FinanceMaker.Pullers.PricesPullers.Interfaces;
 using FinanceMaker.Pullers.TickerPullers;
 using FinanceMaker.Pullers.TickerPullers.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace FinanceMaker.BackTester.QCHelpers;
 
@@ -33,7 +34,6 @@ public static class StaticContainer
     {
         var services = new ServiceCollection();
         services.AddHttpClient();
-        // Can't use the extension (the service collection becomes read only after the build)
         services.AddSingleton<MarketStatus>();
         services.AddSingleton<FinvizTickersPuller>();
         services.AddSingleton<TradingViewTickersPuller>();
@@ -104,6 +104,7 @@ public static class StaticContainer
         services.AddSingleton<FourHourGapTickersPullers>();
         services.AddSingleton<SwingTickersPuller>();
         services.AddSingleton<StockExplode>();
+        services.AddSingleton<EarningsCallPuller>();
 
 
         ServiceProvider = services.BuildServiceProvider();

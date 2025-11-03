@@ -13,12 +13,12 @@ namespace FinanceMaker.Publisher.Traders;
 
 public class SwingTrader : ITrader
 {
-    private readonly StockExplode m_TickersPullers;
+    private readonly EarningsCallPuller m_TickersPullers;
     private readonly IPricesPuller m_PricesPuller;
     private readonly IBroker m_Broker;
     private readonly HashSet<string> m_Tickers = [];
     private const int STARTED_MONEY = 29_500;
-    public SwingTrader(StockExplode tickersPullers, IPricesPuller pricesPuller, IBroker broker)
+    public SwingTrader(EarningsCallPuller tickersPullers, IPricesPuller pricesPuller, IBroker broker)
     {
         m_TickersPullers = tickersPullers;
         m_PricesPuller = pricesPuller;
@@ -64,7 +64,7 @@ public class SwingTrader : ITrader
     }
     private async Task<Dictionary<string, float>> GetPossibleTrades(CancellationToken cancellationToken)
     {
-        var tickers = await m_TickersPullers.ScanTickers(TickersPullerParameters.BestBuyer, cancellationToken);
+        var tickers = await m_TickersPullers.ScanTickers(cancellationToken);
 
         foreach (var ticker in tickers)
         {
@@ -91,7 +91,7 @@ public class SwingTrader : ITrader
         var prices = await m_PricesPuller.GetTickerPrices(
             PricesPullerParameters.GetTodayParams(ticker, Period.OneMinute),
             cancellationToken);
-
+        if (prices.Count() == 0) return 0;
         // Pre-Market strategy
         var premarketResult = PremarketStrategy(ticker, prices);
         if (premarketResult != 0) return premarketResult;

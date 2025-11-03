@@ -25,8 +25,8 @@ public class SwingAlgorithm : QCAlgorithm
 
     public override void Initialize()
     {
-        var endDate = DateTime.Now.ToUniversalTime().Date.AddDays(0);
-        var startDate = endDate.AddDays(-1);
+        var endDate = DateTime.Now.ToUniversalTime().Date.AddDays(1);
+        var startDate = endDate.AddDays(-2);
         var startDateForAlgo = new DateTime(2020, 1, 1);
         var endDateForAlgo = endDate.AddYears(-1).AddMonths(11);
 
@@ -39,17 +39,28 @@ public class SwingAlgorithm : QCAlgorithm
 
         m_TestingPeriod = Resolution.Minute;
         SetTimeZone(TimeZones.NewYork);
+        // string[] tickers = [
+        //    "POET", "PL", "PONY", "ORCX", "OPEN", "ONDS", "OMER", "OLMA", "OKLO"
+        // ];
+        // m_Tickers.AddRange(tickers.Distinct());
+        // foreach (var ticker in m_Tickers)
+        // {
+        //     var time = new DateTime(2025, 10, 23, 22, 53, 0, DateTimeKind.Local);
+        //     var timeUtc = time.ConvertToUtc(TimeZones.Jerusalem);
+        //     m_TickerTriggredTimes[ticker] = timeUtc;
+        // }
+
         string[] tickers = [
-           "POET", "PL", "PONY", "ORCX", "OPEN", "ONDS", "OMER", "OLMA", "OKLO"
+        "FCEL", "CWVX", "CRWV", "CCCX", "BTQ", "BTU", "BTDR", "BE",
+        // "AVAH", "ARTV", "ASTS", "APLD", "HUT", "HOND", "GPCR", "GLTO", "CRML"
         ];
         m_Tickers.AddRange(tickers.Distinct());
         foreach (var ticker in m_Tickers)
         {
-            var time = new DateTime(2025, 10, 23, 22, 53, 0, DateTimeKind.Local);
+            var time = new DateTime(2025, 10, 27, 10, 21, 0, DateTimeKind.Local);
             var timeUtc = time.ConvertToUtc(TimeZones.Jerusalem);
             m_TickerTriggredTimes[ticker] = timeUtc;
         }
-
         Debug($"Tickers count: {m_Tickers.Count}");
         foreach (var ticker in m_Tickers)
         {

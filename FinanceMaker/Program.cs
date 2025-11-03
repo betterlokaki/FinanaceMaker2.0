@@ -15,6 +15,7 @@ using FinanceMaker.Common;
 using FinanceMaker.Common.Extensions;
 using FinanceMaker.Common.Models.Pullers.Enums;
 using FinanceMaker.Publisher.Orders.Broker;
+using FinanceMaker.Pullers.NewsPullers.Interfaces;
 using FinanceMaker.Pullers.TickerPullers;
 using HtmlAgilityPack;
 using Microsoft.Extensions.DependencyInjection;
@@ -82,6 +83,8 @@ var password = Environment.GetEnvironmentVariable("EMAIL_PASSWORD");
 var allTickers = new HashSet<string>();
 var scanner = StaticContainer.ServiceProvider.GetService<StockExplode>();
 var fibonachiRunner = StaticContainer.ServiceProvider.GetService<FibonachiRunner>();
+// var pa = StaticContainer.ServiceProvider.GetService< >();
+// var tickers = await pa!.ScanTickers(CancellationToken.None);
 while (true)
 {
     var ticker = await scanner!.ScanTickers(new FinanceMaker.Common.Models.Pullers.TickersPullerParameters(), CancellationToken.None);
@@ -115,8 +118,8 @@ while (true)
             ));
             var fromAddress = new MailAddress("betterlokaki@gmail.com", "FinanceMaker Bot");
             var toAddress = new MailAddress("shahartheking22@gmail.com", "Shahar Rozolio");
-            var toAdress2 = new MailAddress("evyatar.kima@mail.huji.ac.il", "Evyatar Kima");
-            var toAdress3 = new MailAddress("meir.rozolio@gmail.com", "Meir Rozolio");
+            // var toAdress2 = new MailAddress("evyatar.kima@mail.huji.ac.il", "Evyatar Kima");
+            // var toAdress3 = new MailAddress("meir.rozolio@gmail.com", "Meir Rozolio");
             const string subject = "Ticker List";
             string body = $"Here are the tickers found:\n\n{tickerList}";
 
@@ -131,22 +134,6 @@ while (true)
             };
 
             using (var message = new MailMessage(fromAddress, toAddress)
-            {
-                Subject = subject,
-                Body = body
-            })
-            {
-                smtp.Send(message);
-            }
-            using (var message = new MailMessage(fromAddress, toAdress2)
-            {
-                Subject = subject,
-                Body = body
-            })
-            {
-                smtp.Send(message);
-            }
-            using (var message = new MailMessage(fromAddress, toAdress3)
             {
                 Subject = subject,
                 Body = body

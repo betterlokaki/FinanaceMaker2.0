@@ -119,6 +119,7 @@ var app = Host.CreateDefaultBuilder(args)
                 services.AddSingleton<FourHourGapTickersPullers>();
                 services.AddSingleton<StockExplode>();
                 services.AddSingleton<IBKRClient>();
+                services.AddSingleton<EarningsCallPuller>();
                 services.AddSingleton<IBroker, IBKRBroker>();
                 services.AddSingleton<ITrader, SwingTrader>();
                 services.AddSingleton<Worker>();
